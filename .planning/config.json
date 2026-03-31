@@ -1,0 +1,24 @@
+{
+  "project": "kunoz",
+  "version": "1.0",
+  "client": "Kunoz Construction & Manufacturing",
+  "region": "Saudi Arabia",
+  "deploy": {
+    "platform": "vercel",
+    "domain": ""
+  },
+  "stack": {
+    "framework": "next",
+    "db": "supabase",
+    "auth": "supabase-auth",
+    "ui": "shadcn",
+    "styling": "tailwind"
+  },
+  "features": {
+    "offline": true,
+    "pwa": true,
+    "geofencing": true,
+    "realtime": true,
+    "export": true
+  }
+}
