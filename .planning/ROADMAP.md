@@ -8,12 +8,12 @@
 
 | # | Phase | Status | Dependencies | Requirements |
 |---|-------|--------|--------------|--------------|
-| 1 | Project Setup & Auth | planned | — | AUTH-01–06 |
-| 2 | Locations & Employees | pending | Phase 1 | LOC-01–04, EMP-01–05 |
-| 3 | Attendance Core | pending | Phase 2 | ATT-01–07, SUP-01–04 |
-| 4 | Shifts & Time Rules | pending | Phase 3 | SHF-01–05 |
-| 5 | Offline & PWA | pending | Phase 3 | PWA-01–06 |
-| 6 | Reports & HR Actions | pending | Phase 4 | RPT-01–08, HRA-01–05 |
+| 1 | Project Setup & Auth | verified | — | AUTH-01–06 |
+| 2 | Locations & Employees | verified | Phase 1 | LOC-01–04, EMP-01–05 |
+| 3 | Attendance Core | verified | Phase 2 | ATT-01–07, SUP-01–04 |
+| 4 | Shifts & Time Rules | verified | Phase 3 | SHF-01–05 |
+| 5 | Offline & PWA | verified | Phase 3 | PWA-01–06 |
+| 6 | Reports & HR Actions | in-progress | Phase 4 | RPT-01–08, HRA-01–05 |
 | 7 | Notifications & Polish | pending | Phase 6 | NTF-01–04 |
 
 ## Phase Details
@@ -81,7 +81,7 @@
 **Requirements:** ATT-01–07, SUP-01–04
 
 **Definition of Done:**
-- Employee taps "Clock In" → GPS captured → geofence validated → record stored
+- Employee taps "Clock In" -> GPS captured -> geofence validated -> record stored
 - Works on mobile browser (Chrome Android, Safari iOS)
 - Supervisor can see who's checked in at their site
 - Supervisor can bulk check-in selected employees
@@ -131,12 +131,23 @@
 - Check-in works with airplane mode on
 - Records sync automatically when internet returns
 - User sees clear online/offline indicator
-- No data loss in offline → online transition
+- No data loss in offline -> online transition
 
 ---
 
 ### Phase 6: Reports & HR Actions
 **Goal:** HR can view comprehensive reports and take corrective actions.
+
+**Plans:** 7 plans
+
+Plans:
+- [ ] 6-01-PLAN.md — Install packages + create TypeScript types and Zod schemas
+- [ ] 6-02-PLAN.md — Database migration (hr_action_logs, employee_warnings tables + attendance_records columns)
+- [ ] 6-03-PLAN.md — Report server actions (daily, summary, late, overtime, absence, site comparison, trends)
+- [ ] 6-04-PLAN.md — HR action server actions (correction, overtime approval, warning, leave, audit log)
+- [ ] 6-05-PLAN.md — Report UI (charts, tables, filters, Excel export, reports page)
+- [ ] 6-06-PLAN.md — HR action UI (correction dialog, overtime queue, warning/leave dialogs, audit log, HR actions page)
+- [ ] 6-07-PLAN.md — Integration (navigation updates, HR dashboard enhancement, build verification)
 
 **Scope:**
 - HR dashboard with real-time KPIs (present/absent/late counts per site)
@@ -189,4 +200,4 @@
 
 ---
 *Roadmap created: 2026-03-31*
-*Last updated: 2026-03-31 after initial definition*
+*Last updated: 2026-04-01 — Phase 6 planned (7 plans, 4 waves)*
