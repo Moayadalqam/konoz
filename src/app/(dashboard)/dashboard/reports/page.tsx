@@ -1,4 +1,5 @@
-import { requireRole } from "@/lib/auth/dal";
+import { requireAuth } from "@/lib/auth/dal";
+import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { ReportsPage } from "@/components/reports/reports-page";
 
@@ -7,7 +8,10 @@ export const metadata = {
 };
 
 export default async function ReportsRoute() {
-  await requireRole("admin", "hr_officer");
+  const profile = await requireAuth();
+  if (profile.role !== "admin" && profile.role !== "hr_officer") {
+    redirect("/dashboard");
+  }
 
   const admin = createAdminClient();
   const { data: locations } = await admin

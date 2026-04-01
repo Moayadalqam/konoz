@@ -1,9 +1,13 @@
-import { requireRole } from "@/lib/auth/dal";
+import { requireAuth } from "@/lib/auth/dal";
+import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { HrActionsPage } from "@/components/hr-actions/hr-actions-page";
 
 export default async function HrActionsRoute() {
-  await requireRole("admin", "hr_officer");
+  const profile = await requireAuth();
+  if (profile.role !== "admin" && profile.role !== "hr_officer") {
+    redirect("/dashboard");
+  }
 
   const admin = createAdminClient();
   const { data: employees } = await admin
