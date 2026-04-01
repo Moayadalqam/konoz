@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 const publicRoutes = ["/login", "/signup", "/verify-email", "/reset-password"];
 const authApiRoutes = ["/auth/callback", "/auth/update-password"];
+const staticAssets = ["/sw.js", "/manifest.webmanifest"];
 
 export async function proxy(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -34,6 +35,11 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
+
+  // Allow static assets (sw.js, manifest)
+  if (staticAssets.includes(pathname)) {
+    return supabaseResponse;
+  }
 
   // Allow auth API routes (callback, etc.)
   if (authApiRoutes.some((r) => pathname.startsWith(r))) {
