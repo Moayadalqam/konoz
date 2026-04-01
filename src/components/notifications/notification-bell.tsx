@@ -62,7 +62,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
           table: "notifications",
           filter: `recipient_id=eq.${userId}`,
         },
-        (payload) => {
+        (payload: { new: Record<string, unknown> }) => {
           setUnreadCount((prev) => prev + 1);
           const newNotification = payload.new as { title?: string };
           if (newNotification.title) {

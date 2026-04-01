@@ -2,7 +2,8 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAuth } from "@/lib/auth/dal";
+import { requireAuth, requireRole } from "@/lib/auth/dal";
+import type { AttendanceTrendPoint } from "@/lib/validations/reports";
 
 export interface AttendanceStats {
   totalEmployees: number;
@@ -20,7 +21,7 @@ export interface AttendanceStats {
 }
 
 export async function getAttendanceStatsAction(): Promise<AttendanceStats> {
-  await requireAuth();
+  await requireRole("admin", "hr_officer");
   const adminClient = createAdminClient();
 
   const todayStart = new Date();
@@ -109,17 +110,10 @@ export async function getAttendanceStatsAction(): Promise<AttendanceStats> {
   return { totalEmployees, presentToday, absentToday, lateToday, overtimeThisWeek, sites };
 }
 
-export interface AttendanceTrendPoint {
-  date: string;
-  present: number;
-  absent: number;
-  late: number;
-}
-
 export async function getAttendanceTrendAction(
   days: number = 7
-): Promise<AttendanceTrendPoint[]> {
-  await requireAuth();
+) {
+  await requireRole("admin", "hr_officer");
   const adminClient = createAdminClient();
 
   // Get total active employees

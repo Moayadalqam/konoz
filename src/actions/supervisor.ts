@@ -1,5 +1,6 @@
 "use server";
 
+import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/dal";
 import { revalidatePath } from "next/cache";
@@ -12,26 +13,8 @@ import {
 } from "@/lib/validations/attendance";
 import { isWithinGeofence } from "@/lib/geo/geofence";
 import { computeShiftStatus } from "@/lib/shifts/time-rules";
+import { resolveEmployeeShift } from "@/lib/shifts/resolve";
 import type { Shift } from "@/lib/validations/shift";
-
-async function resolveEmployeeShift(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  employeeId: string
-): Promise<Shift | null> {
-  const { data: result } = await supabase.rpc("get_employee_shift", {
-    p_employee_id: employeeId,
-  });
-
-  if (!result) return null;
-
-  const { data: shift } = await supabase
-    .from("shifts")
-    .select("*")
-    .eq("id", result)
-    .single();
-
-  return shift as Shift | null;
-}
 
 async function getEmployeeForProfile(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -182,7 +165,9 @@ export async function batchClockInAction(data: BatchClockInInput) {
 export async function batchClockOutAction(employeeIds: string[]) {
   const profile = await requireRole("supervisor", "admin", "hr_officer");
 
-  if (!employeeIds.length) throw new Error("No employees selected");
+  // Validate input
+  const parsed = z.array(z.string().uuid()).min(1).max(100).safeParse(employeeIds);
+  if (!parsed.success) throw new Error("Invalid employee selection");
 
   const supabase = await createClient();
   const supervisor = await getEmployeeForProfile(supabase, profile.id);
@@ -369,15 +354,19 @@ export async function addAttendanceNoteAction(data: AttendanceNoteInput) {
   revalidatePath("/dashboard/attendance");
 }
 
+const flagAnomalySchema = z.object({
+  attendanceId: z.string().uuid(),
+  reason: z.string().min(1).max(500),
+});
+
 export async function flagAnomalyAction(
   attendanceId: string,
   reason: string
 ) {
   await requireRole("supervisor", "admin", "hr_officer");
 
-  if (!attendanceId || !reason) {
-    throw new Error("Attendance ID and reason are required");
-  }
+  const parsed = flagAnomalySchema.safeParse({ attendanceId, reason });
+  if (!parsed.success) throw new Error(parsed.error.issues[0].message);
 
   const supabase = await createClient();
 

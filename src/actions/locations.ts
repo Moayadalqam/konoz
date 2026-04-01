@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { requireRole } from "@/lib/auth/dal";
+import { requireAuth, requireRole } from "@/lib/auth/dal";
 import { revalidatePath } from "next/cache";
 import { locationSchema, type LocationFormData } from "@/lib/validations/location";
 
@@ -77,6 +77,7 @@ export async function deleteLocationAction(id: string) {
 }
 
 export async function getLocationsAction() {
+  await requireAuth();
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -88,27 +89,8 @@ export async function getLocationsAction() {
   return data;
 }
 
-export async function getLocationWithCountAction(id: string) {
-  const supabase = await createClient();
-
-  const { data: location, error } = await supabase
-    .from("locations")
-    .select("*")
-    .eq("id", id)
-    .single();
-
-  if (error) throw new Error(error.message);
-
-  const { count } = await supabase
-    .from("employees")
-    .select("*", { count: "exact", head: true })
-    .eq("primary_location_id", id)
-    .eq("is_active", true);
-
-  return { ...location, employee_count: count ?? 0 };
-}
-
 export async function getLocationsWithCountsAction() {
+  await requireAuth();
   const supabase = await createClient();
 
   const { data: locations, error } = await supabase

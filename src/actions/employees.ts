@@ -2,16 +2,14 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireRole } from "@/lib/auth/dal";
+import { requireAuth, requireRole } from "@/lib/auth/dal";
 import { revalidatePath } from "next/cache";
 import {
   employeeSchema,
   type EmployeeFormData,
   type EmployeeFilters,
 } from "@/lib/validations/employee";
-import type { AppRole } from "@/lib/auth/types";
-
-const VALID_ROLES: AppRole[] = ["admin", "hr_officer", "supervisor", "employee"];
+import { VALID_ROLES, type AppRole } from "@/lib/auth/types";
 
 export async function createEmployeeAction(data: EmployeeFormData) {
   await requireRole("admin", "hr_officer");
@@ -147,6 +145,7 @@ export async function linkEmployeeProfileAction(
 }
 
 export async function getEmployeesAction(filters?: EmployeeFilters) {
+  await requireAuth();
   const supabase = await createClient();
 
   let query = supabase
@@ -164,9 +163,13 @@ export async function getEmployeesAction(filters?: EmployeeFilters) {
     query = query.eq("is_active", filters.isActive);
   }
   if (filters?.search) {
-    query = query.or(
-      `full_name.ilike.%${filters.search}%,employee_number.ilike.%${filters.search}%`
-    );
+    // Sanitize search input to prevent PostgREST filter injection
+    const sanitized = filters.search.replace(/[%_.,()]/g, "");
+    if (sanitized.length > 0) {
+      query = query.or(
+        `full_name.ilike.%${sanitized}%,employee_number.ilike.%${sanitized}%`
+      );
+    }
   }
 
   const { data, error } = await query;
@@ -176,6 +179,7 @@ export async function getEmployeesAction(filters?: EmployeeFilters) {
 }
 
 export async function getEmployeeAction(id: string) {
+  await requireAuth();
   const supabase = await createClient();
 
   const { data, error } = await supabase

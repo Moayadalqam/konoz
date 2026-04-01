@@ -37,7 +37,7 @@ export async function signupAction(
     password: result.data.password,
     options: {
       data: { full_name: result.data.full_name },
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_SUPABASE_URL ? "" : ""}${getBaseUrl()}/auth/callback`,
+      emailRedirectTo: `${getBaseUrl()}/auth/callback`,
     },
   });
 

@@ -13,30 +13,12 @@ import {
 } from "@/lib/validations/attendance";
 import { isWithinGeofence, validateGpsReading } from "@/lib/geo/geofence";
 import { computeShiftStatus } from "@/lib/shifts/time-rules";
+import { resolveEmployeeShift } from "@/lib/shifts/resolve";
 import type { Shift } from "@/lib/validations/shift";
 import {
   notifyGeofenceViolation,
   notifyLateArrival,
 } from "@/lib/notifications/create";
-
-async function resolveEmployeeShift(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  employeeId: string
-): Promise<Shift | null> {
-  const { data: result } = await supabase.rpc("get_employee_shift", {
-    p_employee_id: employeeId,
-  });
-
-  if (!result) return null;
-
-  const { data: shift } = await supabase
-    .from("shifts")
-    .select("*")
-    .eq("id", result)
-    .single();
-
-  return shift as Shift | null;
-}
 
 export async function clockInAction(data: ClockInInput) {
   const profile = await requireAuth();

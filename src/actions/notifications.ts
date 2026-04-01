@@ -38,13 +38,14 @@ export async function getUnreadCountAction(): Promise<{ count: number }> {
 }
 
 export async function markNotificationReadAction(notificationId: string) {
-  await requireAuth();
+  const profile = await requireAuth();
   const supabase = await createClient();
 
   const { error } = await supabase
     .from("notifications")
     .update({ is_read: true, read_at: new Date().toISOString() })
-    .eq("id", notificationId);
+    .eq("id", notificationId)
+    .eq("recipient_id", profile.id);
 
   if (error) throw new Error(error.message);
   revalidatePath("/dashboard");
@@ -67,13 +68,14 @@ export async function markAllReadAction(): Promise<{ updated: number }> {
 }
 
 export async function deleteNotificationAction(notificationId: string) {
-  await requireAuth();
+  const profile = await requireAuth();
   const supabase = await createClient();
 
   const { error } = await supabase
     .from("notifications")
     .delete()
-    .eq("id", notificationId);
+    .eq("id", notificationId)
+    .eq("recipient_id", profile.id);
 
   if (error) throw new Error(error.message);
   revalidatePath("/dashboard");

@@ -1,4 +1,5 @@
 export type AppRole = "admin" | "hr_officer" | "supervisor" | "employee";
+export const VALID_ROLES: AppRole[] = ["admin", "hr_officer", "supervisor", "employee"];
 export type RegistrationStatus = "pending" | "approved" | "rejected";
 
 export interface Profile {

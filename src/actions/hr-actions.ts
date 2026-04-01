@@ -1,7 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAuth } from "@/lib/auth/dal";
+import { requireRole } from "@/lib/auth/dal";
 import { revalidatePath } from "next/cache";
 import { computeShiftStatus } from "@/lib/shifts/time-rules";
 import type { Shift } from "@/lib/validations/shift";
@@ -22,11 +22,7 @@ import {
 // ── Helpers ──
 
 async function requireHrOrAdmin() {
-  const profile = await requireAuth();
-  if (profile.role !== "admin" && profile.role !== "hr_officer") {
-    throw new Error("Unauthorized: HR Officer or Admin access required");
-  }
-  return profile;
+  return requireRole("admin", "hr_officer");
 }
 
 async function logHrAction(

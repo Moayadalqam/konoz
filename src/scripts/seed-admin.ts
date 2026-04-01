@@ -7,8 +7,16 @@ config({ path: resolve(process.cwd(), ".env.local") });
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-const adminEmail = process.env.SEED_ADMIN_EMAIL || "admin@kunoz.sa";
-const adminPassword = process.env.SEED_ADMIN_PASSWORD || "KunozAdmin2026!";
+const adminEmail = process.env.SEED_ADMIN_EMAIL;
+const adminPassword = process.env.SEED_ADMIN_PASSWORD;
+
+if (!adminEmail || !adminPassword) {
+  console.error(
+    "Missing SEED_ADMIN_EMAIL or SEED_ADMIN_PASSWORD in .env.local\n" +
+    "Set these environment variables before running the seed script."
+  );
+  process.exit(1);
+}
 
 async function seedAdmin() {
   console.log("Seeding admin user...\n");

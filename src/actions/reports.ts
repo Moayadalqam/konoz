@@ -1,7 +1,7 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAuth } from "@/lib/auth/dal";
+import { requireRole } from "@/lib/auth/dal";
 import type {
   DailyAttendanceReport,
   DailySiteBreakdown,
@@ -16,11 +16,7 @@ import type {
 } from "@/lib/validations/reports";
 
 async function requireHrOrAdmin() {
-  const profile = await requireAuth();
-  if (profile.role !== "admin" && profile.role !== "hr_officer") {
-    throw new Error("Unauthorized: HR officer or admin access required");
-  }
-  return profile;
+  return requireRole("admin", "hr_officer");
 }
 
 /** Jordan work week: Sat–Thu. Friday = day 5 */
