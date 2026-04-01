@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireAuth } from "@/lib/auth/dal";
 import { revalidatePath } from "next/cache";
+import { getTodayStart } from "@/lib/date-utils";
 import {
   clockInSchema,
   clockOutSchema,
@@ -45,29 +46,31 @@ export async function clockInAction(data: ClockInInput) {
     throw new Error("You are not assigned to any location");
   }
 
-  // Get assigned location for geofence check
-  const { data: location, error: locError } = await supabase
-    .from("locations")
-    .select("id, name, latitude, longitude, geofence_radius_meters")
-    .eq("id", employee.primary_location_id)
-    .single();
+  // Parallelize independent queries: location + existing check + shift resolution
+  const todayStart = getTodayStart();
 
+  const [locationResult, existingResult, shift] = await Promise.all([
+    supabase
+      .from("locations")
+      .select("id, name, latitude, longitude, geofence_radius_meters")
+      .eq("id", employee.primary_location_id)
+      .single(),
+    supabase
+      .from("attendance_records")
+      .select("id, clock_out")
+      .eq("employee_id", employee.id)
+      .gte("clock_in", todayStart.toISOString())
+      .is("clock_out", null)
+      .limit(1),
+    resolveEmployeeShift(supabase, employee.id),
+  ]);
+
+  const { data: location, error: locError } = locationResult;
   if (locError || !location) {
     throw new Error("Assigned location not found");
   }
 
-  // Check for existing open clock-in today
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-
-  const { data: existing } = await supabase
-    .from("attendance_records")
-    .select("id, clock_out")
-    .eq("employee_id", employee.id)
-    .gte("clock_in", todayStart.toISOString())
-    .is("clock_out", null)
-    .limit(1);
-
+  const { data: existing } = existingResult;
   if (existing && existing.length > 0) {
     throw new Error("You are already clocked in. Please clock out first.");
   }
@@ -89,9 +92,6 @@ export async function clockInAction(data: ClockInInput) {
   );
 
   const now = new Date().toISOString();
-
-  // Resolve shift for late-arrival detection
-  const shift = await resolveEmployeeShift(supabase, employee.id);
   let shiftId: string | null = null;
   let status: string = "present";
 
@@ -313,8 +313,7 @@ export async function getTodayStatusAction(): Promise<TodayStatusResult> {
     return { status: "not_clocked_in" };
   }
 
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
+  const todayStart = getTodayStart();
 
   const { data: records } = await supabase
     .from("attendance_records")

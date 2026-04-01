@@ -117,7 +117,7 @@ export function EmployeeDashboard({ profile, todayStatus }: EmployeeDashboardPro
             <div>
               <p className="text-xs text-muted-foreground">This Week</p>
               <p className="font-heading text-lg font-bold text-foreground">
-                0 / 5 days
+                -- / 5 days
               </p>
             </div>
           </CardContent>

@@ -1,5 +1,5 @@
 import { requireAuth } from "@/lib/auth/dal";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import { AdminDashboard } from "@/components/dashboard/admin-dashboard";
 import { HrDashboard } from "@/components/dashboard/hr-dashboard";
 import { SupervisorDashboard } from "@/components/dashboard/supervisor-dashboard";
@@ -28,7 +28,7 @@ export default async function DashboardPage() {
   // Fetch pending count for admin
   let pendingCount = 0;
   if (profile.role === "admin") {
-    const supabase = createAdminClient();
+    const supabase = await createClient();
     const { count } = await supabase
       .from("profiles")
       .select("*", { count: "exact", head: true })

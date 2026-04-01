@@ -16,7 +16,7 @@ export async function registerServiceWorker() {
           newWorker.state === "activated" &&
           navigator.serviceWorker.controller
         ) {
-          console.log("[SW] New version available");
+          // New service worker version activated
         }
       });
     });

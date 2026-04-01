@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/dal";
+import { getTodayStart } from "@/lib/date-utils";
 import { revalidatePath } from "next/cache";
 import {
   batchClockInSchema,
@@ -71,8 +72,7 @@ export async function batchClockInAction(data: BatchClockInInput) {
   }
 
   // Check which employees already have open clock-ins today
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
+  const todayStart = getTodayStart();
 
   const { data: existingRecords } = await supabase
     .from("attendance_records")
@@ -104,11 +104,13 @@ export async function batchClockInAction(data: BatchClockInInput) {
 
   const now = new Date().toISOString();
 
-  // Resolve shifts for all eligible employees
+  // Batch-resolve shifts for all eligible employees (avoid N+1)
   const shiftMap = new Map<string, Shift | null>();
-  for (const employeeId of eligibleIds) {
-    const shift = await resolveEmployeeShift(supabase, employeeId);
-    shiftMap.set(employeeId, shift);
+  const shiftResults = await Promise.all(
+    eligibleIds.map((id) => resolveEmployeeShift(supabase, id).then((s) => [id, s] as const))
+  );
+  for (const [id, shift] of shiftResults) {
+    shiftMap.set(id, shift);
   }
 
   const records = eligibleIds.map((employeeId) => {
@@ -189,27 +191,35 @@ export async function batchClockOutAction(employeeIds: string[]) {
     throw new Error("No open clock-in records found for selected employees");
   }
 
-  for (const record of openRecords) {
+  // Pre-fetch all unique shifts in one query (avoid N+1)
+  const uniqueShiftIds = [...new Set(openRecords.map((r) => r.shift_id).filter(Boolean))] as string[];
+  const shiftCache = new Map<string, Shift>();
+  if (uniqueShiftIds.length > 0) {
+    const { data: shifts } = await supabase
+      .from("shifts")
+      .select("*")
+      .in("id", uniqueShiftIds);
+    for (const s of shifts ?? []) {
+      shiftCache.set(s.id, s as Shift);
+    }
+  }
+
+  // Build all updates, then execute in parallel
+  const updates = openRecords.map((record) => {
     const clockInTime = new Date(record.clock_in);
     const totalMinutes = Math.round(
       (now.getTime() - clockInTime.getTime()) / 60000
     );
 
-    // Evaluate shift status on clock-out (late, early departure, overtime)
     let status: string = "present";
     let isOvertime = false;
     let overtimeMinutes = 0;
 
     if (record.shift_id) {
-      const { data: shift } = await supabase
-        .from("shifts")
-        .select("*")
-        .eq("id", record.shift_id)
-        .single();
-
+      const shift = shiftCache.get(record.shift_id);
       if (shift) {
         const shiftResult = computeShiftStatus({
-          shift: shift as Shift,
+          shift,
           clockIn: clockInTime,
           clockOut: now,
         });
@@ -221,7 +231,7 @@ export async function batchClockOutAction(employeeIds: string[]) {
       }
     }
 
-    const { error } = await supabase
+    return supabase
       .from("attendance_records")
       .update({
         clock_out: now.toISOString(),
@@ -232,9 +242,10 @@ export async function batchClockOutAction(employeeIds: string[]) {
         overtime_minutes: overtimeMinutes,
       })
       .eq("id", record.id);
+  });
 
-    if (!error) closedCount++;
-  }
+  const results = await Promise.all(updates);
+  closedCount = results.filter((r) => !r.error).length;
 
   revalidatePath("/dashboard/attendance");
   revalidatePath("/dashboard");
@@ -259,8 +270,7 @@ export async function getSiteAttendanceAction(): Promise<SiteEmployeeAttendance[
   if (!employees || employees.length === 0) return [];
 
   // Get today's attendance records for these employees
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
+  const todayStart = getTodayStart();
 
   const employeeIds = employees.map((e) => e.id);
 

@@ -1,6 +1,5 @@
-import { redirect } from "next/navigation";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAuth } from "@/lib/auth/dal";
+import { requireRole } from "@/lib/auth/dal";
+import { createClient } from "@/lib/supabase/server";
 import { ReportsPage } from "@/components/reports/reports-page";
 
 export const metadata = {
@@ -8,13 +7,10 @@ export const metadata = {
 };
 
 export default async function ReportsRoute() {
-  const profile = await requireAuth();
-  if (profile.role !== "admin" && profile.role !== "hr_officer") {
-    redirect("/dashboard");
-  }
+  await requireRole("admin", "hr_officer");
 
-  const admin = createAdminClient();
-  const { data: locations } = await admin
+  const supabase = await createClient();
+  const { data: locations } = await supabase
     .from("locations")
     .select("id, name")
     .order("name");

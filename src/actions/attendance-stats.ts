@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAuth, requireRole } from "@/lib/auth/dal";
+import { getTodayStart } from "@/lib/date-utils";
 import type { AttendanceTrendPoint } from "@/lib/validations/reports";
 
 export interface AttendanceStats {
@@ -24,8 +25,7 @@ export async function getAttendanceStatsAction(): Promise<AttendanceStats> {
   await requireRole("admin", "hr_officer");
   const adminClient = createAdminClient();
 
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
+  const todayStart = getTodayStart();
 
   // Get all active employees with their locations
   const { data: employees } = await adminClient
@@ -196,8 +196,7 @@ export async function getSupervisorStatsAction() {
     .eq("is_active", true);
 
   // Get today's attendance count
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
+  const todayStart = getTodayStart();
 
   const { count: present } = await supabase
     .from("attendance_records")

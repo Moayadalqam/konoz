@@ -31,7 +31,3 @@ export const updatePasswordSchema = z
     path: ["confirm_password"],
   });
 
-export type SignupInput = z.infer<typeof signupSchema>;
-export type LoginInput = z.infer<typeof loginSchema>;
-export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
-export type UpdatePasswordInput = z.infer<typeof updatePasswordSchema>;

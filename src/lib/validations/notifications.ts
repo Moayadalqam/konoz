@@ -25,12 +25,3 @@ export interface Notification {
   created_at: string;
 }
 
-export const createNotificationSchema = z.object({
-  recipient_id: z.string().uuid(),
-  type: z.enum(NOTIFICATION_TYPES),
-  title: z.string().min(1).max(200),
-  body: z.string().min(1).max(1000),
-  metadata: z.record(z.string(), z.unknown()).optional(),
-});
-
-export type CreateNotificationInput = z.infer<typeof createNotificationSchema>;

@@ -1,5 +1,6 @@
 "use server";
 
+import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth/dal";
 import type {
@@ -34,7 +35,18 @@ function getBusinessDays(from: Date, to: Date): number {
   return count;
 }
 
+const dateStringSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD");
+
+function validateDateRange(from: string, to: string) {
+  dateStringSchema.parse(from);
+  dateStringSchema.parse(to);
+  if (new Date(to) < new Date(from)) throw new Error("End date must be after start date");
+  const diffDays = (new Date(to).getTime() - new Date(from).getTime()) / 86400000;
+  if (diffDays > 365) throw new Error("Date range cannot exceed 365 days");
+}
+
 function dateRange(from: string, to: string) {
+  validateDateRange(from, to);
   const start = new Date(`${from}T00:00:00`);
   const end = new Date(`${to}T23:59:59.999`);
   return { start: start.toISOString(), end: end.toISOString(), startDate: start, endDate: end };

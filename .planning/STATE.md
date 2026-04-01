@@ -26,6 +26,7 @@ See: .planning/PROJECT.md (updated 2026-03-31)
 | 1 | Fix 5 CRITICAL security issues (open redirect, hardcoded creds, IDOR, filter injection, missing middleware) | Done | 2026-04-01 |
 | 2 | Fix HIGH auth + deduplication (auth guards on 6 read actions, stats role check, extract resolveEmployeeShift, consolidate VALID_ROLES/requireHrOrAdmin/AttendanceTrendPoint) | Done | 2026-04-01 |
 | 3 | Fix HIGH performance (browser Supabase singleton) + MEDIUM (security headers, Zod on batchClockOut/flagAnomaly, dead code cleanup) | Done | 2026-04-01 |
+| 4 | Fix remaining MEDIUM+LOW: extract todayStart/leaflet-setup utilities, remove unused types/schemas, fix N+1 in batch ops, parallelize clockIn, date range validation, matchMedia, phone placeholder, admin client cleanup | Done | 2026-04-01 |
 
 ## Session Log
 
