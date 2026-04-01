@@ -1,5 +1,3 @@
-import { z } from "zod";
-
 export const NOTIFICATION_TYPES = [
   "geofence_violation",
   "late_arrival",
