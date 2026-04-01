@@ -1,5 +1,5 @@
 import { requireRole } from "@/lib/auth/dal";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { ReportsPage } from "@/components/reports/reports-page";
 
 export const metadata = {
@@ -9,8 +9,8 @@ export const metadata = {
 export default async function ReportsRoute() {
   await requireRole("admin", "hr_officer");
 
-  const supabase = await createClient();
-  const { data: locations } = await supabase
+  const admin = createAdminClient();
+  const { data: locations } = await admin
     .from("locations")
     .select("id, name")
     .order("name");
