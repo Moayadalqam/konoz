@@ -6,7 +6,6 @@ import { revalidatePath } from "next/cache";
 import type { AppRole, RegistrationStatus } from "@/lib/auth/types";
 
 const VALID_ROLES: AppRole[] = ["admin", "hr_officer", "supervisor", "employee"];
-const VALID_STATUSES: RegistrationStatus[] = ["pending", "approved", "rejected"];
 
 export async function approveUserAction(userId: string) {
   await requireRole("admin", "hr_officer");

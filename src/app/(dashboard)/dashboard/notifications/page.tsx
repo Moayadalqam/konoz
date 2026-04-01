@@ -5,7 +5,7 @@ import { NotificationsPage } from "@/components/notifications/notifications-page
 export const metadata = { title: "Notifications -- Kunoz" };
 
 export default async function Page() {
-  const profile = await requireAuth();
+  await requireAuth();
   const notifications = await getNotificationsAction(100);
   return <NotificationsPage initialNotifications={notifications} />;
 }

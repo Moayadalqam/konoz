@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Clock, Plus } from "lucide-react";
+import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ShiftList } from "@/components/shifts/shift-list";
 import { ShiftFormDialog } from "@/components/shifts/shift-form-dialog";

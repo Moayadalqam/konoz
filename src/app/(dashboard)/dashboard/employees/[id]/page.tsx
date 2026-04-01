@@ -11,14 +11,16 @@ export default async function EmployeeProfilePage({
   const { id } = await params;
   await requireRole("admin", "hr_officer", "supervisor");
 
+  let employee;
   try {
-    const employee = await getEmployeeAction(id);
-    return (
-      <div className="w-full px-4 py-8 sm:px-6 lg:px-8">
-        <EmployeeProfile employee={employee} />
-      </div>
-    );
+    employee = await getEmployeeAction(id);
   } catch {
     notFound();
   }
+
+  return (
+    <div className="w-full px-4 py-8 sm:px-6 lg:px-8">
+      <EmployeeProfile employee={employee} />
+    </div>
+  );
 }

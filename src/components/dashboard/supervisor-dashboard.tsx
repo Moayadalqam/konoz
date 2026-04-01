@@ -74,7 +74,7 @@ export function SupervisorDashboard({ profile, siteStats }: SupervisorDashboardP
       <div className="mt-8">
         <Card>
           <CardHeader>
-            <CardTitle>Today's Site Activity</CardTitle>
+            <CardTitle>Today&apos;s Site Activity</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="flex h-48 items-center justify-center rounded-lg border border-dashed border-border">

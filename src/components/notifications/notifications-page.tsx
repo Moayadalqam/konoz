@@ -9,7 +9,6 @@ import {
 import type { Notification, NotificationType } from "@/lib/validations/notifications";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
 import { NotificationItem } from "./notification-item";
 
 const FILTER_TABS: { value: string; label: string; types?: NotificationType[] }[] = [

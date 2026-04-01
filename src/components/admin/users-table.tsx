@@ -186,6 +186,7 @@ function RoleSelector({
 
 // ─── Filter Tabs ─────────────────────────────────────────────────────────────
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function StatusFilterTabs({ currentFilter }: { currentFilter: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();

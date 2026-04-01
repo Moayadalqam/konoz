@@ -10,7 +10,7 @@ interface WelcomeBannerProps {
   message: string;
 }
 
-export function WelcomeBanner({ name, role, message }: WelcomeBannerProps) {
+export function WelcomeBanner({ name, message }: WelcomeBannerProps) {
   const [dismissed, setDismissed] = useState(false);
 
   if (dismissed) return null;

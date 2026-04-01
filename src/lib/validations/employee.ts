@@ -1,6 +1,4 @@
 import { z } from "zod";
-import type { AppRole } from "@/lib/auth/types";
-
 export const employeeSchema = z.object({
   employee_number: z
     .string()

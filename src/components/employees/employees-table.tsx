@@ -105,6 +105,7 @@ function SortableHeader({
   label,
   sortKey,
   currentKey,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   currentDir,
   onSort,
   className,

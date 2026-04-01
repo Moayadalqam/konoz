@@ -36,6 +36,7 @@ export function InstallPrompt() {
     const ios =
       /iPad|iPhone|iPod/.test(navigator.userAgent) &&
       !("MSStream" in window);
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: initialize platform detection state on mount
     setIsIOS(ios);
     if (ios) {
       setShow(true);

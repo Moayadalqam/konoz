@@ -21,6 +21,7 @@ export function AttendanceHistory() {
   });
 
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: sync loading state before async fetch
     setLoading(true);
     getMyAttendanceAction({ from: dateRange.from, to: dateRange.to })
       .then((data) => setRecords(data as AttendanceWithDetails[]))

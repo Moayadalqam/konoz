@@ -41,6 +41,7 @@ export function ShiftFormDialog({
   const [gracePeriod, setGracePeriod] = useState("15");
 
   // Reset form when dialog opens/shift changes
+  /* eslint-disable react-hooks/set-state-in-effect -- intentional: reset form fields when dialog opens with different data */
   useEffect(() => {
     if (open) {
       if (shift) {
@@ -60,6 +61,7 @@ export function ShiftFormDialog({
       setErrors({});
     }
   }, [open, shift]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();

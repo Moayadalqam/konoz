@@ -30,6 +30,7 @@ export function NotificationDropdown({
   useEffect(() => {
     if (!isOpen) return;
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: sync loading state before async fetch
     setLoading(true);
     getNotificationsAction(10)
       .then((data) => {
@@ -103,7 +104,7 @@ export function NotificationDropdown({
           ) : notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-10 text-muted-foreground">
               <CheckCircle2 className="size-10 text-primary/30" />
-              <p className="mt-3 text-sm font-medium">You're all caught up</p>
+              <p className="mt-3 text-sm font-medium">You&apos;re all caught up</p>
               <p className="mt-0.5 text-xs">No new notifications</p>
             </div>
           ) : (

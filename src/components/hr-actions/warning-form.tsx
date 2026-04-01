@@ -74,6 +74,7 @@ export function WarningForm({ employees }: WarningFormProps) {
 
   useEffect(() => {
     if (!selectedEmployeeForHistory) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional: reset state when no employee selected
       setWarnings([]);
       return;
     }
