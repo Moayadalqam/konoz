@@ -60,14 +60,14 @@ export function SupervisorDashboard({ profile, siteStats }: SupervisorDashboardP
 
       {/* Quick actions */}
       <div className="mt-8 flex flex-wrap gap-3">
-        <Button variant="outline" size="lg" render={<Link href="/dashboard/bulk-checkin" />}>
+        <Link href="/dashboard/bulk-checkin" className="inline-flex items-center gap-2 rounded-lg border border-input bg-background px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent">
           <UserCheck className="size-4" />
           Bulk Check-in
-        </Button>
-        <Button variant="outline" size="lg" render={<Link href="/dashboard/site-attendance" />}>
+        </Link>
+        <Link href="/dashboard/site-attendance" className="inline-flex items-center gap-2 rounded-lg border border-input bg-background px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent">
           <Users className="size-4" />
           Site Attendance
-        </Button>
+        </Link>
       </div>
 
       {/* Activity placeholder */}

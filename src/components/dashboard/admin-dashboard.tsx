@@ -13,7 +13,7 @@ import {
 import type { Profile } from "@/lib/auth/types";
 import type { AttendanceStats } from "@/actions/attendance-stats";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+
 import { PageTransition } from "@/components/transitions/page-transition";
 
 interface AdminDashboardProps {
@@ -97,18 +97,18 @@ export function AdminDashboard({ profile, pendingCount, attendanceStats }: Admin
           Quick Actions
         </h2>
         <div className="flex flex-wrap gap-3">
-          <Button variant="outline" size="lg" render={<Link href="/admin/users" />}>
+          <Link href="/admin/users" className="inline-flex items-center gap-2 rounded-lg border border-input bg-background px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent">
             <Shield className="size-4" />
             Manage Users
-          </Button>
-          <Button variant="outline" size="lg" render={<Link href="/dashboard/reports" />}>
+          </Link>
+          <Link href="/dashboard/reports" className="inline-flex items-center gap-2 rounded-lg border border-input bg-background px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent">
             <BarChart3 className="size-4" />
             View Reports
-          </Button>
-          <Button variant="outline" size="lg" render={<Link href="/dashboard/employees" />}>
+          </Link>
+          <Link href="/dashboard/employees" className="inline-flex items-center gap-2 rounded-lg border border-input bg-background px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent">
             <Users className="size-4" />
             Employees
-          </Button>
+          </Link>
         </div>
       </div>
     </PageTransition>

@@ -5,7 +5,7 @@ import { Clock, CalendarDays, Timer, CheckCircle2, ArrowRight } from "lucide-rea
 import type { Profile } from "@/lib/auth/types";
 import type { TodayStatusResult } from "@/lib/validations/attendance";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+
 import { PageTransition } from "@/components/transitions/page-transition";
 
 interface EmployeeDashboardProps {
@@ -49,14 +49,13 @@ export function EmployeeDashboard({ profile, todayStatus }: EmployeeDashboardPro
                   Not clocked in yet
                 </p>
               </div>
-              <Button
-                size="lg"
-                className="h-12 px-10 text-base font-semibold bg-emerald-600 hover:bg-emerald-700 text-white"
-                render={<Link href="/dashboard/attendance" />}
+              <Link
+                href="/dashboard/attendance"
+                className="inline-flex h-12 items-center gap-2 rounded-lg bg-emerald-600 px-10 text-base font-semibold text-white transition-colors hover:bg-emerald-700"
               >
                 <Clock className="size-5" />
                 Clock In
-              </Button>
+              </Link>
             </>
           )}
           {todayStatus.status === "clocked_in" && todayStatus.record && (
@@ -76,14 +75,13 @@ export function EmployeeDashboard({ profile, todayStatus }: EmployeeDashboardPro
                   Currently working
                 </p>
               </div>
-              <Button
-                size="lg"
-                className="h-12 px-10 text-base font-semibold bg-amber-500 hover:bg-amber-600 text-white"
-                render={<Link href="/dashboard/attendance" />}
+              <Link
+                href="/dashboard/attendance"
+                className="inline-flex h-12 items-center gap-2 rounded-lg bg-amber-500 px-10 text-base font-semibold text-white transition-colors hover:bg-amber-600"
               >
                 <ArrowRight className="size-5" />
                 Go to Attendance
-              </Button>
+              </Link>
             </>
           )}
           {todayStatus.status === "clocked_out" && todayStatus.record && (
