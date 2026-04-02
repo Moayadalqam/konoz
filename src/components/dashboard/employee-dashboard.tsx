@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { Clock, CalendarDays, Timer, CheckCircle2, ArrowRight } from "lucide-react";
+import { Clock, CalendarDays, Timer, CheckCircle2, ArrowRight, AlertTriangle } from "lucide-react";
 import type { Profile } from "@/lib/auth/types";
 import type { TodayStatusResult } from "@/lib/validations/attendance";
+import type { EmployeeDashboardStats } from "@/actions/attendance-stats";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 import { PageTransition } from "@/components/transitions/page-transition";
@@ -11,9 +12,10 @@ import { PageTransition } from "@/components/transitions/page-transition";
 interface EmployeeDashboardProps {
   profile: Profile;
   todayStatus: TodayStatusResult;
+  stats: EmployeeDashboardStats;
 }
 
-export function EmployeeDashboard({ profile, todayStatus }: EmployeeDashboardProps) {
+export function EmployeeDashboard({ profile, todayStatus, stats }: EmployeeDashboardProps) {
   const firstName = profile.full_name.split(" ")[0];
 
   return (
@@ -115,7 +117,7 @@ export function EmployeeDashboard({ profile, todayStatus }: EmployeeDashboardPro
             <div>
               <p className="text-xs text-muted-foreground">This Week</p>
               <p className="font-heading text-lg font-bold text-foreground">
-                -- / 5 days
+                {stats.daysThisWeek} / 6 days
               </p>
             </div>
           </CardContent>
@@ -129,7 +131,7 @@ export function EmployeeDashboard({ profile, todayStatus }: EmployeeDashboardPro
             <div>
               <p className="text-xs text-muted-foreground">Hours This Month</p>
               <p className="font-heading text-lg font-bold text-foreground">
-                -- hrs
+                {stats.hoursThisMonth} hrs
               </p>
             </div>
           </CardContent>
@@ -138,12 +140,12 @@ export function EmployeeDashboard({ profile, todayStatus }: EmployeeDashboardPro
         <Card className="sm:col-span-2 lg:col-span-1">
           <CardContent className="flex items-center gap-4 py-5">
             <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-warning/10">
-              <Clock className="size-5 text-warning" />
+              <AlertTriangle className="size-5 text-warning" />
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Late Arrivals</p>
+              <p className="text-xs text-muted-foreground">Late This Month</p>
               <p className="font-heading text-lg font-bold text-foreground">
-                0
+                {stats.lateThisMonth}
               </p>
             </div>
           </CardContent>
@@ -153,15 +155,74 @@ export function EmployeeDashboard({ profile, todayStatus }: EmployeeDashboardPro
       {/* Recent attendance */}
       <div className="mt-8">
         <Card>
-          <CardHeader>
+          <CardHeader className="flex-row items-center justify-between">
             <CardTitle>Recent Attendance</CardTitle>
+            <Link
+              href="/dashboard/attendance"
+              className="text-xs font-medium text-primary hover:underline"
+            >
+              View all
+            </Link>
           </CardHeader>
           <CardContent>
-            <div className="flex h-48 items-center justify-center rounded-lg border border-dashed border-border">
-              <p className="text-sm text-muted-foreground">
-                Your attendance history will appear here
-              </p>
-            </div>
+            {stats.recentRecords.length === 0 ? (
+              <div className="flex h-32 items-center justify-center rounded-lg border border-dashed border-border">
+                <p className="text-sm text-muted-foreground">
+                  No attendance records yet
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {stats.recentRecords.map((rec) => {
+                  const date = new Date(rec.clock_in);
+                  const mins = rec.total_minutes ?? 0;
+                  const hours = Math.floor(mins / 60);
+                  const m = mins % 60;
+                  return (
+                    <div
+                      key={rec.id}
+                      className="flex items-center justify-between rounded-lg border border-border/50 px-3 py-2.5"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="flex size-8 items-center justify-center rounded-full bg-muted">
+                          <Clock className="size-3.5 text-muted-foreground" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium text-foreground">
+                            {date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {rec.location_name}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {rec.clock_out ? (
+                          <span className="text-xs font-medium text-muted-foreground">
+                            {hours}h {m}m
+                          </span>
+                        ) : (
+                          <span className="text-xs font-medium text-primary">
+                            Working...
+                          </span>
+                        )}
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-[10px] font-medium ${
+                            rec.status === "present"
+                              ? "bg-emerald-500/10 text-emerald-600"
+                              : rec.status === "late"
+                                ? "bg-amber-500/10 text-amber-600"
+                                : "bg-muted text-muted-foreground"
+                          }`}
+                        >
+                          {rec.status.replace("_", " ")}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

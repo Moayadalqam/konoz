@@ -13,8 +13,9 @@
 | 3 | Attendance Core | verified | Phase 2 | ATT-01–07, SUP-01–04 |
 | 4 | Shifts & Time Rules | verified | Phase 3 | SHF-01–05 |
 | 5 | Offline & PWA | verified | Phase 3 | PWA-01–06 |
-| 6 | Reports & HR Actions | in-progress | Phase 4 | RPT-01–08, HRA-01–05 |
-| 7 | Notifications & Polish | pending | Phase 6 | NTF-01–04 |
+| 6 | Reports & HR Actions | verified | Phase 4 | RPT-01–08, HRA-01–05 |
+| 7 | Notifications & Polish | verified | Phase 6 | NTF-01–04 |
+| 8 | Fix: Dashboard Polish & Integration Wiring | not started | Phase 7 | Audit gaps |
 
 ## Phase Details
 
@@ -199,5 +200,35 @@ Plans:
 - Demo flow smooth end-to-end
 
 ---
+
+### Phase 8: Fix — Dashboard Polish & Integration Wiring
+**Goal:** Close all 6 tech debt items from v1.0 milestone audit. Make the demo airtight.
+
+**Scope:**
+- Wire `CorrectionDialog` into HR Actions page (add "Corrections" tab or button in reports)
+- Fill employee dashboard with real stats (this week attendance, hours this month, late count, recent history)
+- Enable supervisor dashboard clock-in button (link to attendance page or make functional)
+- Fix notification metadata — pass real attendance record UUID instead of literal `"clock-in"`
+- Add card hover lift (`hover:translate-y-[-2px]`) and button press scale (`active:scale-[0.98]`) animations
+
+**Audit Gaps Addressed:**
+- Integration: CorrectionDialog orphaned
+- Phase 3 debt: Employee dashboard placeholders, supervisor disabled button
+- Phase 6 debt: CorrectionDialog no trigger
+- Phase 7 debt: Notification metadata quality, deferred animations
+
+**Manual Action Required (not code):**
+- Enable leaked password protection in Supabase Auth dashboard (Settings > Auth > Password Protection)
+
+**Definition of Done:**
+- HR can open CorrectionDialog from the UI and correct an attendance record
+- Employee dashboard shows real weekly attendance, monthly hours, and recent records
+- Supervisor dashboard clock-in button works (links to or triggers clock-in)
+- Notification metadata contains real attendance record UUIDs
+- Cards have subtle hover lift, buttons have press feedback
+- `npx tsc --noEmit` passes
+- `npm run build` succeeds
+
+---
 *Roadmap created: 2026-03-31*
-*Last updated: 2026-04-01 — Phase 6 planned (7 plans, 4 waves)*
+*Last updated: 2026-04-02 — Phase 8 added (audit gap fixes)*

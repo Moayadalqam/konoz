@@ -1,5 +1,5 @@
 ---
-date: 2026-04-02 10:45
+date: 2026-04-02 11:35
 mode: web
 critical_count: 0
 high_count: 0
@@ -23,11 +23,15 @@ status: clean
 
 None.
 
-## Latest Changes
+## Latest Changes (Phase 8 — Audit Gap Fixes)
 
-- Sidebar: logout button added
-- Profile page: logout button for mobile users
-- Auth layout: KUNOZ wordmark links to /login
+- HR Actions: Corrections tab wired with CorrectionDialog + search + record table
+- Employee dashboard: real stats (weekly days, monthly hours, late count, recent records)
+- Supervisor dashboard: clock-in button now links to /dashboard/attendance
+- Card: hover lift animation (hover:-translate-y-0.5)
+- Button: press scale animation (active:scale-[0.98])
+- New server actions: getEmployeeDashboardStats, getCorrectableRecordsAction
+- All new actions have auth guards (requireAuth/requireHrOrAdmin)
 - Pending approval: back-to-sign-in link
 - Signup: back arrow to login
 - Reports page: sites-tab.tsx "use client" fix

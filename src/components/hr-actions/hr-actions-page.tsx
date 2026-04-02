@@ -8,20 +8,23 @@ import {
   AlertTriangle,
   Calendar,
   ClipboardList,
+  Pencil,
   Plus,
 } from "lucide-react";
 import { OvertimeApproval } from "@/components/hr-actions/overtime-approval";
 import { WarningForm } from "@/components/hr-actions/warning-form";
 import { LeaveDialog } from "@/components/hr-actions/leave-dialog";
 import { AuditLog } from "@/components/hr-actions/audit-log";
+import { CorrectionsTab } from "@/components/hr-actions/corrections-tab";
 
 interface HrActionsPageProps {
   employees: { id: string; full_name: string; employee_number: string }[];
 }
 
-type TabId = "overtime" | "warnings" | "leave" | "audit";
+type TabId = "corrections" | "overtime" | "warnings" | "leave" | "audit";
 
 const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
+  { id: "corrections", label: "Corrections", icon: Pencil },
   { id: "overtime", label: "Overtime Approval", icon: Clock },
   { id: "warnings", label: "Warnings", icon: AlertTriangle },
   { id: "leave", label: "Leave / Absence", icon: Calendar },
@@ -29,7 +32,7 @@ const TABS: { id: TabId; label: string; icon: React.ElementType }[] = [
 ];
 
 export function HrActionsPage({ employees }: HrActionsPageProps) {
-  const [activeTab, setActiveTab] = useState<TabId>("overtime");
+  const [activeTab, setActiveTab] = useState<TabId>("corrections");
   const [leaveDialogOpen, setLeaveDialogOpen] = useState(false);
 
   return (
@@ -69,13 +72,15 @@ export function HrActionsPage({ employees }: HrActionsPageProps) {
                 <span className="hidden sm:inline">{tab.label}</span>
                 {/* Short label for mobile */}
                 <span className="sm:hidden">
-                  {tab.id === "overtime"
-                    ? "OT"
-                    : tab.id === "warnings"
-                      ? "Warn"
-                      : tab.id === "leave"
-                        ? "Leave"
-                        : "Audit"}
+                  {tab.id === "corrections"
+                    ? "Fix"
+                    : tab.id === "overtime"
+                      ? "OT"
+                      : tab.id === "warnings"
+                        ? "Warn"
+                        : tab.id === "leave"
+                          ? "Leave"
+                          : "Audit"}
                 </span>
               </button>
             );
@@ -86,6 +91,8 @@ export function HrActionsPage({ employees }: HrActionsPageProps) {
       <Separator className="mb-6" />
 
       {/* Tab content */}
+      {activeTab === "corrections" && <CorrectionsTab />}
+
       {activeTab === "overtime" && <OvertimeApproval />}
 
       {activeTab === "warnings" && <WarningForm employees={employees} />}

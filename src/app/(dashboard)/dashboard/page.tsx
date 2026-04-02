@@ -8,6 +8,7 @@ import {
   getAttendanceStatsAction,
   getAttendanceTrendAction,
   getSupervisorStatsAction,
+  getEmployeeDashboardStats,
 } from "@/actions/attendance-stats";
 import { getTodayStatusAction } from "@/actions/attendance";
 import { getRecentActivityFeed } from "@/actions/reports";
@@ -72,8 +73,11 @@ export default async function DashboardPage() {
       );
     }
     case "employee": {
-      const todayStatus = await getTodayStatusAction();
-      return <EmployeeDashboard profile={profile} todayStatus={todayStatus} />;
+      const [todayStatus, empStats] = await Promise.all([
+        getTodayStatusAction(),
+        getEmployeeDashboardStats(),
+      ]);
+      return <EmployeeDashboard profile={profile} todayStatus={todayStatus} stats={empStats} />;
     }
   }
 }
