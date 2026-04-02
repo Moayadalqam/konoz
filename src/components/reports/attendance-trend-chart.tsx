@@ -74,8 +74,8 @@ export function AttendanceTrendChart({ data }: AttendanceTrendChartProps) {
   }));
 
   return (
-    <div className="h-[300px] w-full">
-      <ResponsiveContainer width="100%" height="100%">
+    <div className="h-[300px] w-full" style={{ minWidth: 0, minHeight: 0 }}>
+      <ResponsiveContainer width="100%" height="100%" debounce={50} minWidth={1} minHeight={1}>
         <LineChart
           data={formatted}
           margin={{ top: 8, right: 12, left: -8, bottom: 0 }}

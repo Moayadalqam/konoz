@@ -21,19 +21,19 @@ function formatTime(isoString: string): string {
 }
 
 function useLiveDuration(clockInTime: string, isActive: boolean) {
-  const [elapsed, setElapsed] = useState(() => {
-    const diff = Date.now() - new Date(clockInTime).getTime();
-    return Math.max(0, Math.floor(diff / 1000));
-  });
+  const [elapsed, setElapsed] = useState(0);
 
+  // Compute elapsed time after hydration to avoid SSR/client mismatch
   useEffect(() => {
-    if (!isActive) return;
-
-    const interval = setInterval(() => {
+    const compute = () => {
       const diff = Date.now() - new Date(clockInTime).getTime();
       setElapsed(Math.max(0, Math.floor(diff / 1000)));
-    }, 1000);
+    };
 
+    compute();
+    if (!isActive) return;
+
+    const interval = setInterval(compute, 1000);
     return () => clearInterval(interval);
   }, [clockInTime, isActive]);
 

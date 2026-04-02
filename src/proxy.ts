@@ -6,6 +6,18 @@ const authApiRoutes = ["/auth/callback", "/auth/update-password"];
 const staticAssets = ["/sw.js", "/manifest.webmanifest"];
 
 export async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // Allow static assets (sw.js, manifest) — skip auth entirely
+  if (staticAssets.includes(pathname)) {
+    return NextResponse.next({ request });
+  }
+
+  // Allow auth API routes (callback, etc.) — skip auth
+  if (authApiRoutes.some((r) => pathname.startsWith(r))) {
+    return NextResponse.next({ request });
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -34,18 +46,6 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { pathname } = request.nextUrl;
-
-  // Allow static assets (sw.js, manifest)
-  if (staticAssets.includes(pathname)) {
-    return supabaseResponse;
-  }
-
-  // Allow auth API routes (callback, etc.)
-  if (authApiRoutes.some((r) => pathname.startsWith(r))) {
-    return supabaseResponse;
-  }
-
   // Unauthenticated user on a protected route → login
   if (!user && !publicRoutes.includes(pathname) && pathname !== "/") {
     const url = request.nextUrl.clone();
@@ -65,6 +65,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|sw\\.js|manifest\\.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

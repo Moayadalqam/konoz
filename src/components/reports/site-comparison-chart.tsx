@@ -74,8 +74,8 @@ export function SiteComparisonChart({ data }: SiteComparisonChartProps) {
   const chartHeight = Math.max(200, data.length * 48 + 40);
 
   return (
-    <div style={{ height: chartHeight }} className="w-full">
-      <ResponsiveContainer width="100%" height="100%">
+    <div style={{ height: chartHeight, minWidth: 0, minHeight: 0 }} className="w-full">
+      <ResponsiveContainer width="100%" height="100%" debounce={50} minWidth={1} minHeight={1}>
         <BarChart
           data={data}
           layout="vertical"

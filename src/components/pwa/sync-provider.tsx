@@ -44,9 +44,12 @@ export function useSyncContext() {
 const SYNC_INTERVAL = 30_000;
 
 export function SyncProvider({ children }: { children: ReactNode }) {
-  const [isOnline, setIsOnline] = useState(
-    typeof navigator !== "undefined" ? navigator.onLine : true
-  );
+  const [isOnline, setIsOnline] = useState(true);
+
+  // Sync with actual online status after hydration
+  useEffect(() => {
+    setIsOnline(navigator.onLine);
+  }, []);
   const [pendingCount, setPendingCount] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncResult, setLastSyncResult] = useState<SyncResult | null>(
