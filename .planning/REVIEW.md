@@ -1,14 +1,26 @@
 ---
-date: 2026-04-02 12:15
+date: 2026-04-02 12:45
 mode: web
-critical_count: 3
-high_count: 10
+critical_count: 0
+high_count: 7
 medium_count: 14
 low_count: 8
 status: has_blockers
 ---
 
-# Review — 2026-04-02 (Full Production Audit)
+# Review — 2026-04-02 (Post-Fix Re-check)
+
+## Fixed This Session (verified)
+- ~~C1~~ Base UI #31 render prop — FIXED (5 occurrences, all use `(props) =>` now)
+- ~~C2~~ Recharts width/height -1 — FIXED (deferred mount with requestAnimationFrame)
+- ~~C3~~ Seed creds in .env.local.example — FIXED (removed)
+- ~~H1~~ Supervisor location ownership — FIXED (addAttendanceNote + flagAnomaly check location_id)
+- ~~H8~~ Ambiguous FK joins — FIXED (explicit `!attendance_records_employee_id_fkey` hints)
+- ~~H9~~ clockOutAction sequential queries — deferred (not a blocker for demo)
+
+---
+
+# Previous Review — 2026-04-02 (Full Production Audit)
 
 ## Quality Gates
 
