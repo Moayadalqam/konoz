@@ -345,7 +345,7 @@ export async function getSiteAttendanceAction(): Promise<SiteEmployeeAttendance[
 }
 
 export async function addAttendanceNoteAction(data: AttendanceNoteInput) {
-  await requireRole("supervisor", "admin", "hr_officer");
+  const profile = await requireRole("supervisor", "admin", "hr_officer");
 
   const parsed = attendanceNoteSchema.safeParse(data);
   if (!parsed.success) {
@@ -353,6 +353,20 @@ export async function addAttendanceNoteAction(data: AttendanceNoteInput) {
   }
 
   const supabase = await createClient();
+
+  // Supervisors can only modify records at their own location
+  if (profile.role === "supervisor") {
+    const supervisor = await getEmployeeForProfile(supabase, profile.id);
+    const { data: record } = await supabase
+      .from("attendance_records")
+      .select("location_id")
+      .eq("id", parsed.data.attendance_id)
+      .single();
+
+    if (record?.location_id !== supervisor.primary_location_id) {
+      throw new Error("You can only modify records at your assigned location");
+    }
+  }
 
   const { error } = await supabase
     .from("attendance_records")
@@ -373,21 +387,29 @@ export async function flagAnomalyAction(
   attendanceId: string,
   reason: string
 ) {
-  await requireRole("supervisor", "admin", "hr_officer");
+  const profile = await requireRole("supervisor", "admin", "hr_officer");
 
   const parsed = flagAnomalySchema.safeParse({ attendanceId, reason });
   if (!parsed.success) throw new Error(parsed.error.issues[0].message);
 
   const supabase = await createClient();
 
-  // Get current notes
+  // Get current notes + location for ownership check
   const { data: record, error: fetchError } = await supabase
     .from("attendance_records")
-    .select("notes")
+    .select("notes, location_id")
     .eq("id", attendanceId)
     .single();
 
   if (fetchError) throw new Error(fetchError.message);
+
+  // Supervisors can only flag records at their own location
+  if (profile.role === "supervisor") {
+    const supervisor = await getEmployeeForProfile(supabase, profile.id);
+    if (record?.location_id !== supervisor.primary_location_id) {
+      throw new Error("You can only flag records at your assigned location");
+    }
+  }
 
   const existingNotes = record?.notes ?? "";
   const flaggedNotes = `[ANOMALY] ${reason}${existingNotes ? `\n${existingNotes}` : ""}`;

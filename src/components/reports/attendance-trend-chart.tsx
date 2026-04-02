@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import {
   ResponsiveContainer,
   LineChart,
@@ -58,6 +59,13 @@ function CustomTooltip({
 }
 
 export function AttendanceTrendChart({ data }: AttendanceTrendChartProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
   if (!data.length) {
     return (
       <div className="flex h-[300px] items-center justify-center rounded-lg border border-dashed border-border">
@@ -72,6 +80,10 @@ export function AttendanceTrendChart({ data }: AttendanceTrendChartProps) {
     ...d,
     label: formatDate(d.date),
   }));
+
+  if (!mounted) {
+    return <div className="h-[300px] w-full" />;
+  }
 
   return (
     <div className="h-[300px] w-full" style={{ minWidth: 0, minHeight: 0 }}>

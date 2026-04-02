@@ -58,7 +58,7 @@ export function Topbar({ profile }: { profile: Profile }) {
             </div>
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem render={<Link href="/dashboard/profile" />}>
+          <DropdownMenuItem render={(props) => <Link {...props} href="/dashboard/profile" />}>
             <User className="size-4" />
             My Profile
           </DropdownMenuItem>

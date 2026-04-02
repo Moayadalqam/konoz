@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import {
   ResponsiveContainer,
   BarChart,
@@ -61,6 +62,13 @@ function CustomTooltip({
 }
 
 export function SiteComparisonChart({ data }: SiteComparisonChartProps) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(frame);
+  }, []);
+
   if (!data.length) {
     return (
       <div className="flex h-[300px] items-center justify-center rounded-lg border border-dashed border-border">
@@ -72,6 +80,10 @@ export function SiteComparisonChart({ data }: SiteComparisonChartProps) {
   }
 
   const chartHeight = Math.max(200, data.length * 48 + 40);
+
+  if (!mounted) {
+    return <div style={{ height: chartHeight }} className="w-full" />;
+  }
 
   return (
     <div style={{ height: chartHeight, minWidth: 0, minHeight: 0 }} className="w-full">
