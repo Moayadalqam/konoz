@@ -253,7 +253,7 @@ export async function getPendingOvertimeAction(): Promise<
       clock_out,
       overtime_minutes,
       overtime_status,
-      employees!inner(full_name, employee_number),
+      employees!attendance_records_employee_id_fkey(full_name, employee_number),
       locations(name),
       shifts(name)
     `
@@ -546,7 +546,7 @@ export async function getCorrectableRecordsAction(
       clock_out,
       status,
       is_corrected,
-      employees!inner(full_name, employee_number),
+      employees!attendance_records_employee_id_fkey(full_name, employee_number),
       locations(name),
       shifts(name)
     `

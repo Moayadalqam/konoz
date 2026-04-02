@@ -232,7 +232,7 @@ export async function getLateArrivalsReport(
 
   let query = admin
     .from("attendance_records")
-    .select("employee_id, clock_in, employees(full_name, employee_number, primary_location_id, locations(name))")
+    .select("employee_id, clock_in, employees!attendance_records_employee_id_fkey(full_name, employee_number, primary_location_id, locations(name))")
     .eq("status", "late")
     .gte("clock_in", start)
     .lte("clock_in", end);
@@ -291,7 +291,7 @@ export async function getOvertimeReport(
 
   let query = admin
     .from("attendance_records")
-    .select("employee_id, location_id, overtime_minutes, overtime_status, employees(full_name, employee_number, primary_location_id), locations(id, name)")
+    .select("employee_id, location_id, overtime_minutes, overtime_status, employees!attendance_records_employee_id_fkey(full_name, employee_number, primary_location_id), locations(id, name)")
     .eq("is_overtime", true)
     .gte("clock_in", start)
     .lte("clock_in", end);
@@ -543,7 +543,7 @@ export async function getRecentActivityFeed(
   // Get recent records with clock-out events
   const { data: records } = await admin
     .from("attendance_records")
-    .select("id, employee_id, clock_in, clock_out, status, employees(full_name), locations(name)")
+    .select("id, employee_id, clock_in, clock_out, status, employees!attendance_records_employee_id_fkey(full_name), locations(name)")
     .order("updated_at", { ascending: false })
     .limit(limit);
 
