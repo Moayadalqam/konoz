@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 import { useFormStatus } from "react-dom";
 import Link from "next/link";
-import { Loader2, Eye, EyeOff } from "lucide-react";
+import { Loader2, Eye, EyeOff, ArrowLeft } from "lucide-react";
 
 import { signupAction, type ActionState } from "@/actions/auth";
 import { Button } from "@/components/ui/button";
@@ -79,6 +79,13 @@ export default function SignupPage() {
   return (
     <Card>
       <CardHeader>
+        <Link
+          href="/login"
+          className="mb-2 inline-flex w-fit items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeft className="size-3.5" />
+          Back to sign in
+        </Link>
         <CardTitle className="text-xl">Create your account</CardTitle>
         <CardDescription>
           Enter your details to get started with Kunoz.

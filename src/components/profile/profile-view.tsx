@@ -2,7 +2,8 @@
 
 import { useActionState, useEffect } from "react";
 import { toast } from "sonner";
-import { Mail, Phone, Briefcase, Calendar, Shield } from "lucide-react";
+import { Mail, Phone, Briefcase, Calendar, Shield, LogOut } from "lucide-react";
+import { signOutAction } from "@/actions/auth";
 import type { Profile, AppRole } from "@/lib/auth/types";
 import {
   updateProfileAction,
@@ -191,6 +192,15 @@ export function ProfileView({ profile }: { profile: Profile }) {
                 {isPending ? "Saving..." : "Save Changes"}
               </Button>
             </div>
+          </form>
+
+          <Separator className="my-6" />
+
+          <form action={signOutAction}>
+            <Button type="submit" variant="outline" className="w-full text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive">
+              <LogOut className="size-4" />
+              Sign Out
+            </Button>
           </form>
         </CardContent>
       </Card>

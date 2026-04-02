@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Kunoz — Sign In",
@@ -31,14 +32,13 @@ export default function AuthLayout({
         }}
       />
 
-      {/* Wordmark */}
+      {/* Wordmark — links back to login */}
       <div className="mb-8 flex flex-col items-center gap-2">
-        <h1
-          className="font-heading text-3xl font-bold tracking-tight text-primary"
-          aria-label="Kunoz"
-        >
-          KUNOZ
-        </h1>
+        <Link href="/login" aria-label="Back to sign in">
+          <h1 className="font-heading text-3xl font-bold tracking-tight text-primary transition-opacity hover:opacity-80">
+            KUNOZ
+          </h1>
+        </Link>
         <p className="text-sm text-muted-foreground">
           Workforce Attendance Management
         </p>
