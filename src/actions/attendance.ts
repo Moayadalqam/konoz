@@ -285,7 +285,8 @@ export async function clockOutAction(data: ClockOutInput) {
       is_overtime: isOvertime,
       overtime_minutes: overtimeMinutes,
     })
-    .eq("id", parsed.data.attendance_id);
+    .eq("id", parsed.data.attendance_id)
+    .is("clock_out", null);
 
   if (updateError) handleActionError(updateError, "clockOutAction", { attendanceId: parsed.data.attendance_id });
 
@@ -371,7 +372,8 @@ export async function getMyAttendanceAction(filters?: AttendanceFilters) {
     .eq("employee_id", employee.id)
     .gte("clock_in", from.toISOString())
     .lte("clock_in", to.toISOString())
-    .order("clock_in", { ascending: false });
+    .order("clock_in", { ascending: false })
+    .limit(200);
 
   if (error) handleActionError(error, "getMyAttendanceAction");
   return data;

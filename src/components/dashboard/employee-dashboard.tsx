@@ -17,13 +17,15 @@ interface EmployeeDashboardProps {
 
 export function EmployeeDashboard({ profile, todayStatus, stats }: EmployeeDashboardProps) {
   const firstName = profile.full_name.split(" ")[0];
+  const hour = new Date().getHours();
+  const greeting = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
   return (
     <PageTransition className="w-full px-4 py-6 sm:px-6 lg:px-8">
       {/* Welcome */}
       <div className="mb-8">
         <h1 className="font-heading text-2xl font-bold tracking-tight text-foreground sm:text-3xl">
-          Good morning, {firstName}
+          {greeting}, {firstName}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
           {new Date().toLocaleDateString("en-US", {

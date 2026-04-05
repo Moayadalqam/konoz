@@ -3,7 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAuth, requireRole } from "@/lib/auth/dal";
-import { getTodayStart } from "@/lib/date-utils";
+import { getTodayStart, toSaudiDate, getSaudiWeekStart } from "@/lib/date-utils";
 import type { AttendanceTrendPoint } from "@/lib/validations/reports";
 
 export interface AttendanceStats {
@@ -27,19 +27,19 @@ export async function getAttendanceStatsAction(): Promise<AttendanceStats> {
 
   const todayStart = getTodayStart();
 
-  // Get all active employees with their locations
-  const { data: employees } = await adminClient
-    .from("employees")
-    .select("id, primary_location_id, locations(id, name)")
-    .eq("is_active", true);
+  // Parallelize independent queries: employees + today's attendance
+  const [{ data: employees }, { data: records }] = await Promise.all([
+    adminClient
+      .from("employees")
+      .select("id, primary_location_id, locations(id, name)")
+      .eq("is_active", true),
+    adminClient
+      .from("attendance_records")
+      .select("employee_id, location_id, status, is_overtime, overtime_minutes")
+      .gte("clock_in", todayStart.toISOString()),
+  ]);
 
   const totalEmployees = employees?.length ?? 0;
-
-  // Get today's attendance records (include status and overtime)
-  const { data: records } = await adminClient
-    .from("attendance_records")
-    .select("employee_id, location_id, status, is_overtime, overtime_minutes")
-    .gte("clock_in", todayStart.toISOString());
 
   const presentEmployeeIds = new Set(
     (records ?? []).map((r) => r.employee_id)
@@ -51,16 +51,13 @@ export async function getAttendanceStatsAction(): Promise<AttendanceStats> {
   // Count late arrivals today
   const lateToday = (records ?? []).filter((r) => r.status === "late").length;
 
-  // Calculate overtime this week
-  const weekStart = new Date();
-  const dayOfWeek = weekStart.getDay();
-  // Start from Sunday (or Monday depending on locale — use Sunday for simplicity)
-  weekStart.setDate(weekStart.getDate() - dayOfWeek);
-  weekStart.setHours(0, 0, 0, 0);
+  // Calculate overtime this week (Saudi week: Sun-Thu)
+  const weekStart = getSaudiWeekStart();
+  const saudiDateStr = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Riyadh" });
+  const [sy, sm, sd] = saudiDateStr.split("-").map(Number);
+  const dayOfWeek = new Date(Date.UTC(sy, sm - 1, sd)).getUTCDay();
 
   let overtimeThisWeek = 0;
-  // If today is the only day in the query, just sum today's overtime
-  // For a full week, we need a separate query
   if (dayOfWeek === 0) {
     // Sunday — only today's records
     overtimeThisWeek = (records ?? []).reduce(
@@ -142,7 +139,7 @@ export async function getAttendanceTrendAction(
   const dayMap = new Map<string, { present: Set<string>; late: number }>();
 
   for (const rec of records ?? []) {
-    const dateKey = rec.clock_in.slice(0, 10);
+    const dateKey = toSaudiDate(rec.clock_in);
     if (!dayMap.has(dateKey)) {
       dayMap.set(dateKey, { present: new Set(), late: 0 });
     }
@@ -156,9 +153,9 @@ export async function getAttendanceTrendAction(
   const cursor = new Date(startDate);
 
   while (cursor <= endDate) {
-    const dateKey = cursor.toISOString().slice(0, 10);
-    // Skip Fridays (Jordan weekend)
-    if (cursor.getDay() !== 5) {
+    const dateKey = cursor.toLocaleDateString("en-CA", { timeZone: "Asia/Riyadh" });
+    // Skip Fri+Sat (Saudi weekend)
+    if (cursor.getDay() !== 5 && cursor.getDay() !== 6) {
       const day = dayMap.get(dateKey);
       trend.push({
         date: dateKey,
@@ -201,15 +198,13 @@ export async function getEmployeeDashboardStats(): Promise<EmployeeDashboardStat
     return { daysThisWeek: 0, hoursThisMonth: 0, lateThisMonth: 0, recentRecords: [] };
   }
 
-  // Week start (Sunday)
-  const weekStart = new Date();
-  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
-  weekStart.setHours(0, 0, 0, 0);
+  // Week start (Sunday) — Saudi timezone
+  const empWeekStart = getSaudiWeekStart();
 
-  // Month start
-  const monthStart = new Date();
-  monthStart.setDate(1);
-  monthStart.setHours(0, 0, 0, 0);
+  // Month start — Saudi timezone
+  const saudiNow = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Riyadh" });
+  const [my, mm] = saudiNow.split("-").map(Number);
+  const monthStart = new Date(Date.UTC(my, mm - 1, 1, -3, 0, 0, 0));
 
   // Parallel: week records, month records, recent 5
   const [weekResult, monthResult, recentResult] = await Promise.all([
@@ -217,7 +212,7 @@ export async function getEmployeeDashboardStats(): Promise<EmployeeDashboardStat
       .from("attendance_records")
       .select("clock_in")
       .eq("employee_id", employee.id)
-      .gte("clock_in", weekStart.toISOString()),
+      .gte("clock_in", empWeekStart.toISOString()),
     supabase
       .from("attendance_records")
       .select("total_minutes, status")
@@ -233,7 +228,7 @@ export async function getEmployeeDashboardStats(): Promise<EmployeeDashboardStat
 
   // Unique days this week
   const uniqueDays = new Set(
-    (weekResult.data ?? []).map((r) => r.clock_in.slice(0, 10))
+    (weekResult.data ?? []).map((r) => toSaudiDate(r.clock_in))
   );
 
   // Hours this month
@@ -280,27 +275,26 @@ export async function getSupervisorStatsAction() {
     return { total: 0, present: 0, location: null };
   }
 
-  // Get employee count at location
-  const { count: total } = await supabase
-    .from("employees")
-    .select("*", { count: "exact", head: true })
-    .eq("primary_location_id", employee.primary_location_id)
-    .eq("is_active", true);
-
-  // Get today's attendance count
+  // Parallelize 3 independent queries: employee count, attendance count, location name
   const todayStart = getTodayStart();
 
-  const { count: present } = await supabase
-    .from("attendance_records")
-    .select("*", { count: "exact", head: true })
-    .eq("location_id", employee.primary_location_id)
-    .gte("clock_in", todayStart.toISOString());
-
-  const { data: location } = await supabase
-    .from("locations")
-    .select("name")
-    .eq("id", employee.primary_location_id)
-    .single();
+  const [{ count: total }, { count: present }, { data: location }] = await Promise.all([
+    supabase
+      .from("employees")
+      .select("*", { count: "exact", head: true })
+      .eq("primary_location_id", employee.primary_location_id)
+      .eq("is_active", true),
+    supabase
+      .from("attendance_records")
+      .select("*", { count: "exact", head: true })
+      .eq("location_id", employee.primary_location_id)
+      .gte("clock_in", todayStart.toISOString()),
+    supabase
+      .from("locations")
+      .select("name")
+      .eq("id", employee.primary_location_id)
+      .single(),
+  ]);
 
   return {
     total: total ?? 0,

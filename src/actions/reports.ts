@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth/dal";
+import { toSaudiDate } from "@/lib/date-utils";
 import type {
   DailyAttendanceReport,
   DailySiteBreakdown,
@@ -20,9 +21,10 @@ async function requireHrOrAdmin() {
   return requireRole("admin", "hr_officer");
 }
 
-/** Jordan work week: Sat–Thu. Friday = day 5 */
+/** Saudi work week: Sun–Thu. Friday & Saturday = weekend. */
 function isBusinessDay(date: Date): boolean {
-  return date.getDay() !== 5;
+  const day = date.getDay();
+  return day !== 5 && day !== 6;
 }
 
 function getBusinessDays(from: Date, to: Date): number {
@@ -47,8 +49,9 @@ function validateDateRange(from: string, to: string) {
 
 function dateRange(from: string, to: string) {
   validateDateRange(from, to);
-  const start = new Date(`${from}T00:00:00`);
-  const end = new Date(`${to}T23:59:59.999`);
+  // Saudi midnight = UTC+3
+  const start = new Date(`${from}T00:00:00+03:00`);
+  const end = new Date(`${to}T23:59:59.999+03:00`);
   return { start: start.toISOString(), end: end.toISOString(), startDate: start, endDate: end };
 }
 
@@ -198,7 +201,7 @@ export async function getEmployeeSummaryReport(
 
   for (const emp of employees ?? []) {
     const recs = empRecords.get(emp.id) ?? [];
-    const uniqueDays = new Set(recs.map((r) => r.clock_in.slice(0, 10)));
+    const uniqueDays = new Set(recs.map((r) => toSaudiDate(r.clock_in)));
     const loc = emp.locations as unknown as { name: string } | null;
 
     rows.push({
@@ -261,7 +264,7 @@ export async function getLateArrivalsReport(
         dates: [],
       });
     }
-    empMap.get(rec.employee_id)!.dates.push(rec.clock_in.slice(0, 10));
+    empMap.get(rec.employee_id)!.dates.push(toSaudiDate(rec.clock_in));
   }
 
   const rows: LateArrivalRow[] = Array.from(empMap.entries()).map(([id, data]) => ({
@@ -400,7 +403,7 @@ export async function getAbsenceReport(
     if (!presentDays.has(rec.employee_id)) {
       presentDays.set(rec.employee_id, new Set());
     }
-    presentDays.get(rec.employee_id)!.add(rec.clock_in.slice(0, 10));
+    presentDays.get(rec.employee_id)!.add(toSaudiDate(rec.clock_in));
   }
 
   // Get all business days in range
@@ -408,7 +411,7 @@ export async function getAbsenceReport(
   const cursor = new Date(startDate);
   while (cursor <= endDate) {
     if (isBusinessDay(cursor)) {
-      allBizDays.push(cursor.toISOString().slice(0, 10));
+      allBizDays.push(cursor.toLocaleDateString("en-CA", { timeZone: "Asia/Riyadh" }));
     }
     cursor.setDate(cursor.getDate() + 1);
   }
@@ -430,10 +433,10 @@ export async function getAbsenceReport(
       // Find the next business day after prev (skip Friday)
       const nextBizDay = new Date(prev);
       nextBizDay.setDate(nextBizDay.getDate() + 1);
-      if (nextBizDay.getDay() === 5) {
-        nextBizDay.setDate(nextBizDay.getDate() + 1); // skip Friday
+      while (nextBizDay.getDay() === 5 || nextBizDay.getDay() === 6) {
+        nextBizDay.setDate(nextBizDay.getDate() + 1); // skip Fri+Sat
       }
-      if (curr.toISOString().slice(0, 10) === nextBizDay.toISOString().slice(0, 10)) {
+      if (curr.toLocaleDateString("en-CA") === nextBizDay.toLocaleDateString("en-CA")) {
         currentStreak++;
         maxConsecutive = Math.max(maxConsecutive, currentStreak);
       } else {

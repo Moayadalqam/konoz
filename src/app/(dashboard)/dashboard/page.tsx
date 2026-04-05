@@ -26,20 +26,18 @@ export default async function DashboardPage() {
     void generateDailySummaryIfNeeded(profile.id).catch(() => {});
   }
 
-  // Fetch pending count for admin
-  let pendingCount = 0;
-  if (profile.role === "admin") {
-    const supabase = createAdminClient();
-    const { count } = await supabase
-      .from("profiles")
-      .select("*", { count: "exact", head: true })
-      .eq("registration_status", "pending");
-    pendingCount = count ?? 0;
-  }
-
   switch (profile.role) {
     case "admin": {
-      const stats = await getAttendanceStatsAction();
+      // Parallelize pending count + attendance stats
+      const supabase = createAdminClient();
+      const [{ count }, stats] = await Promise.all([
+        supabase
+          .from("profiles")
+          .select("*", { count: "exact", head: true })
+          .eq("registration_status", "pending"),
+        getAttendanceStatsAction(),
+      ]);
+      const pendingCount = count ?? 0;
       return (
         <AdminDashboard
           profile={profile}

@@ -37,10 +37,18 @@ export function getShiftNetMinutes(
 }
 
 /**
- * Extract time-of-day minutes from a Date object.
+ * Extract time-of-day minutes from a Date object in Saudi timezone.
  */
 function dateToMinutesSinceMidnight(date: Date): number {
-  return date.getHours() * 60 + date.getMinutes();
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "Asia/Riyadh",
+    hour: "numeric",
+    minute: "numeric",
+    hour12: false,
+  }).formatToParts(date);
+  const hour = parseInt(parts.find((p) => p.type === "hour")?.value ?? "0", 10);
+  const minute = parseInt(parts.find((p) => p.type === "minute")?.value ?? "0", 10);
+  return hour * 60 + minute;
 }
 
 /**

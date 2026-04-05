@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import type { AppRole, Profile } from "./types";
@@ -11,8 +12,8 @@ export async function getUser() {
   return user;
 }
 
-/** Get the current user's profile or null. */
-export async function getProfile(): Promise<Profile | null> {
+/** Get the current user's profile or null. Deduplicated per request via React cache(). */
+export const getProfile = cache(async (): Promise<Profile | null> => {
   const supabase = await createClient();
   const {
     data: { user },
@@ -27,7 +28,7 @@ export async function getProfile(): Promise<Profile | null> {
     .single();
 
   return data as Profile | null;
-}
+});
 
 /** Require an authenticated, approved user. Redirects if not. */
 export async function requireAuth(): Promise<Profile> {

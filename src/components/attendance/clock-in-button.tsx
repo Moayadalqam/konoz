@@ -118,6 +118,7 @@ export function ClockInButton() {
             // Saved to IndexedDB for later sync
             setOfflineSessionId(result.session_id);
             setPhase("success_offline");
+            navigator.vibrate?.([100, 50, 100]);
             toast.info("Saved offline — will sync when connected", {
               description: new Date(result.time).toLocaleTimeString("en-US", {
                 hour: "2-digit",
@@ -135,6 +136,7 @@ export function ClockInButton() {
             setOutsideGeofence(!result.within_geofence);
 
             setPhase("success");
+            navigator.vibrate?.(200);
             setShowPulse(true);
 
             if (!result.within_geofence) {
@@ -156,7 +158,7 @@ export function ClockInButton() {
             setTimeout(() => {
               setPhase("idle");
               setShowPulse(false);
-            }, 1200);
+            }, 2500);
           }
         } catch (err) {
           setPhase("error");
@@ -219,23 +221,20 @@ export function ClockInButton() {
             setPhase("idle");
           }
         } catch (err) {
-          setPhase("idle");
           const msg =
             err instanceof Error ? err.message : "Failed to clock out";
           setErrorMsg(msg);
+          setPhase("error");
           toast.error(msg);
         }
       });
     } catch (err) {
-      setPhase("idle");
-      if (err instanceof GeolocationPositionError) {
-        setErrorMsg("Location permission denied. Please enable GPS.");
-      } else if (err instanceof Error) {
-        setErrorMsg(err.message);
-      } else {
-        setErrorMsg("Failed to acquire GPS position");
-      }
-      toast.error(errorMsg || "GPS acquisition failed");
+      const msg = err instanceof GeolocationPositionError
+        ? { 1: "Location permission denied.", 2: "Unable to determine location.", 3: "Location request timed out." }[err.code] || "GPS error"
+        : err instanceof Error ? err.message : "Failed to acquire GPS";
+      setErrorMsg(msg);
+      setPhase("error");
+      toast.error(msg);
     }
   };
 
@@ -388,7 +387,7 @@ export function ClockInButton() {
           onClick={handleClockIn}
           disabled={isPending}
           className={cn(
-            "relative h-16 w-full max-w-xs rounded-xl bg-emerald-600 text-lg font-bold text-white",
+            "relative h-20 w-full rounded-xl bg-emerald-600 text-lg font-bold text-white",
             "transition-all duration-200 ease-out",
             "hover:bg-emerald-700 hover:scale-[1.02]",
             "active:scale-[0.98] active:bg-emerald-800",

@@ -17,7 +17,7 @@ export async function resolveEmployeeShift(
   employeeId: string,
   locationId?: string | null
 ): Promise<Shift | null> {
-  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  const today = new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Riyadh" });
 
   // Build OR filter: employee-specific OR location-based assignments
   const orClauses = [`employee_id.eq.${employeeId}`];
