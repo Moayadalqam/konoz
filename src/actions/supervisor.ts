@@ -13,6 +13,7 @@ import {
   type SiteEmployeeAttendance,
 } from "@/lib/validations/attendance";
 import { isWithinGeofence } from "@/lib/geo/geofence";
+import { handleActionError } from "@/lib/errors";
 import { computeShiftStatus } from "@/lib/shifts/time-rules";
 import { resolveEmployeeShift } from "@/lib/shifts/resolve";
 import type { Shift } from "@/lib/validations/shift";
@@ -63,7 +64,7 @@ export async function batchClockInAction(data: BatchClockInInput) {
     .eq("primary_location_id", location.id)
     .eq("is_active", true);
 
-  if (empError) throw new Error(empError.message);
+  if (empError) handleActionError(empError, "batchClockInAction");
 
   if (!employees || employees.length !== parsed.data.employee_ids.length) {
     throw new Error(
@@ -107,7 +108,7 @@ export async function batchClockInAction(data: BatchClockInInput) {
   // Batch-resolve shifts for all eligible employees (avoid N+1)
   const shiftMap = new Map<string, Shift | null>();
   const shiftResults = await Promise.all(
-    eligibleIds.map((id) => resolveEmployeeShift(supabase, id).then((s) => [id, s] as const))
+    eligibleIds.map((id) => resolveEmployeeShift(supabase, id, location.id).then((s) => [id, s] as const))
   );
   for (const [id, shift] of shiftResults) {
     shiftMap.set(id, shift);
@@ -151,7 +152,7 @@ export async function batchClockInAction(data: BatchClockInInput) {
     .from("attendance_records")
     .insert(records);
 
-  if (insertError) throw new Error(insertError.message);
+  if (insertError) handleActionError(insertError, "batchClockInAction");
 
   revalidatePath("/dashboard/attendance");
   revalidatePath("/dashboard");
@@ -185,7 +186,7 @@ export async function batchClockOutAction(employeeIds: string[]) {
     .eq("location_id", supervisor.primary_location_id!)
     .is("clock_out", null);
 
-  if (fetchError) throw new Error(fetchError.message);
+  if (fetchError) handleActionError(fetchError, "batchClockOutAction");
 
   if (!openRecords || openRecords.length === 0) {
     throw new Error("No open clock-in records found for selected employees");
@@ -266,7 +267,7 @@ export async function getSiteAttendanceAction(): Promise<SiteEmployeeAttendance[
     .eq("is_active", true)
     .order("full_name");
 
-  if (empError) throw new Error(empError.message);
+  if (empError) handleActionError(empError, "getSiteEmployeesAction");
   if (!employees || employees.length === 0) return [];
 
   // Get today's attendance records for these employees
@@ -373,7 +374,7 @@ export async function addAttendanceNoteAction(data: AttendanceNoteInput) {
     .update({ notes: parsed.data.notes })
     .eq("id", parsed.data.attendance_id);
 
-  if (error) throw new Error(error.message);
+  if (error) handleActionError(error, "addAttendanceNoteAction");
 
   revalidatePath("/dashboard/attendance");
 }
@@ -401,7 +402,7 @@ export async function flagAnomalyAction(
     .eq("id", attendanceId)
     .single();
 
-  if (fetchError) throw new Error(fetchError.message);
+  if (fetchError) handleActionError(fetchError, "flagAnomalyAction");
 
   // Supervisors can only flag records at their own location
   if (profile.role === "supervisor") {
@@ -419,7 +420,7 @@ export async function flagAnomalyAction(
     .update({ notes: flaggedNotes })
     .eq("id", attendanceId);
 
-  if (error) throw new Error(error.message);
+  if (error) handleActionError(error, "flagAnomalyAction");
 
   revalidatePath("/dashboard/attendance");
 }

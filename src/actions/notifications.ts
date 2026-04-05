@@ -5,6 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { requireAuth } from "@/lib/auth/dal";
 import { revalidatePath } from "next/cache";
 import type { Notification } from "@/lib/validations/notifications";
+import { handleActionError } from "@/lib/errors";
 
 export async function getNotificationsAction(
   limit = 50
@@ -19,7 +20,7 @@ export async function getNotificationsAction(
     .order("created_at", { ascending: false })
     .limit(limit);
 
-  if (error) throw new Error(error.message);
+  if (error) handleActionError(error, "notificationsAction");
   return (data ?? []) as Notification[];
 }
 
@@ -33,7 +34,7 @@ export async function getUnreadCountAction(): Promise<{ count: number }> {
     .eq("recipient_id", profile.id)
     .eq("is_read", false);
 
-  if (error) throw new Error(error.message);
+  if (error) handleActionError(error, "notificationsAction");
   return { count: count ?? 0 };
 }
 
@@ -47,7 +48,7 @@ export async function markNotificationReadAction(notificationId: string) {
     .eq("id", notificationId)
     .eq("recipient_id", profile.id);
 
-  if (error) throw new Error(error.message);
+  if (error) handleActionError(error, "notificationsAction");
   revalidatePath("/dashboard");
 }
 
@@ -62,7 +63,7 @@ export async function markAllReadAction(): Promise<{ updated: number }> {
     .eq("is_read", false)
     .select("id");
 
-  if (error) throw new Error(error.message);
+  if (error) handleActionError(error, "notificationsAction");
   revalidatePath("/dashboard");
   return { updated: data?.length ?? 0 };
 }
@@ -77,7 +78,7 @@ export async function deleteNotificationAction(notificationId: string) {
     .eq("id", notificationId)
     .eq("recipient_id", profile.id);
 
-  if (error) throw new Error(error.message);
+  if (error) handleActionError(error, "notificationsAction");
   revalidatePath("/dashboard");
 }
 

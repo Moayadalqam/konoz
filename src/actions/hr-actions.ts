@@ -3,6 +3,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { requireRole } from "@/lib/auth/dal";
 import { revalidatePath } from "next/cache";
+import { handleActionError } from "@/lib/errors";
 import { computeShiftStatus } from "@/lib/shifts/time-rules";
 import type { Shift } from "@/lib/validations/shift";
 import {
@@ -147,7 +148,7 @@ export async function correctAttendanceAction(data: CorrectionInput) {
     .update(updates)
     .eq("id", parsed.data.attendance_id);
 
-  if (updateError) throw new Error(updateError.message);
+  if (updateError) handleActionError(updateError, "correctAttendanceAction");
 
   // Log the action
   await logHrAction(adminClient, {
@@ -207,7 +208,7 @@ export async function decideOvertimeAction(data: OvertimeDecisionInput) {
     })
     .eq("id", parsed.data.attendance_id);
 
-  if (updateError) throw new Error(updateError.message);
+  if (updateError) handleActionError(updateError, "decideOvertimeAction");
 
   const actionType =
     parsed.data.decision === "approved"
@@ -262,7 +263,7 @@ export async function getPendingOvertimeAction(): Promise<
     .eq("overtime_status", "pending")
     .order("clock_in", { ascending: false });
 
-  if (error) throw new Error(error.message);
+  if (error) handleActionError(error, "getPendingOvertimeAction");
   if (!data) return [];
 
   return data.map((row) => {
@@ -327,7 +328,7 @@ export async function createWarningAction(data: WarningInput) {
     .select("id")
     .single();
 
-  if (insertError) throw new Error(insertError.message);
+  if (insertError) handleActionError(insertError, "issueWarningAction");
 
   await logHrAction(adminClient, {
     action_type: "warning",
@@ -380,7 +381,7 @@ export async function getEmployeeWarningsAction(
     .eq("employee_id", employeeId)
     .order("created_at", { ascending: false });
 
-  if (error) throw new Error(error.message);
+  if (error) handleActionError(error, "getWarningsAction");
   if (!data) return [];
 
   return data.map((row) => {
@@ -465,7 +466,7 @@ export async function markLeaveAction(data: LeaveMarkInput) {
       })
       .eq("id", existingRecord.id);
 
-    if (updateError) throw new Error(updateError.message);
+    if (updateError) handleActionError(updateError, "markLeaveAction");
   } else {
     // Insert new record
     const { data: inserted, error: insertError } = await adminClient
@@ -483,7 +484,7 @@ export async function markLeaveAction(data: LeaveMarkInput) {
       .select("id")
       .single();
 
-    if (insertError) throw new Error(insertError.message);
+    if (insertError) handleActionError(insertError, "markLeaveAction");
     targetRecordId = inserted!.id;
   }
 
@@ -556,7 +557,7 @@ export async function getCorrectableRecordsAction(
     .order("clock_in", { ascending: false })
     .limit(50);
 
-  if (error) throw new Error(error.message);
+  if (error) handleActionError(error, "getCorrectionHistoryAction");
   if (!data) return [];
 
   let results = data.map((row) => {
@@ -635,7 +636,7 @@ export async function getAuditLogAction(
 
   const { data, error } = await query;
 
-  if (error) throw new Error(error.message);
+  if (error) handleActionError(error, "getAuditLogAction");
   if (!data) return [];
 
   return data.map((row) => {

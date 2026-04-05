@@ -20,6 +20,8 @@ import {
   notifyGeofenceViolation,
   notifyLateArrival,
 } from "@/lib/notifications/create";
+import { handleActionError } from "@/lib/errors";
+import { logger } from "@/lib/logger";
 
 export async function clockInAction(data: ClockInInput) {
   const profile = await requireAuth();
@@ -62,7 +64,7 @@ export async function clockInAction(data: ClockInInput) {
       .gte("clock_in", todayStart.toISOString())
       .is("clock_out", null)
       .limit(1),
-    resolveEmployeeShift(supabase, employee.id),
+    resolveEmployeeShift(supabase, employee.id, employee.primary_location_id),
   ]);
 
   const { data: location, error: locError } = locationResult;
@@ -129,7 +131,9 @@ export async function clockInAction(data: ClockInInput) {
     .select("id")
     .single();
 
-  if (insertError) throw new Error(insertError.message);
+  if (insertError) handleActionError(insertError, "clockInAction", { employeeId: employee.id, locationId: location.id });
+
+  logger.info("clockInAction", "Employee clocked in", { employeeId: employee.id, locationId: location.id, withinGeofence, status });
 
   const attendanceId = insertedRecord?.id ?? "";
 
@@ -214,12 +218,24 @@ export async function clockOutAction(data: ClockOutInput) {
     throw new Error("No open clock-in record found");
   }
 
-  // Get location for geofence check
-  const { data: location } = await supabase
-    .from("locations")
-    .select("latitude, longitude, geofence_radius_meters, name")
-    .eq("id", record.location_id)
-    .single();
+  // Parallelize location + shift lookups (both depend on record, not each other)
+  const [locationResult, shiftResult] = await Promise.all([
+    supabase
+      .from("locations")
+      .select("latitude, longitude, geofence_radius_meters, name")
+      .eq("id", record.location_id)
+      .single(),
+    record.shift_id
+      ? supabase
+          .from("shifts")
+          .select("*")
+          .eq("id", record.shift_id)
+          .single()
+      : Promise.resolve({ data: null }),
+  ]);
+
+  const location = locationResult.data;
+  const shift = shiftResult.data as Shift | null;
 
   const withinGeofence = location
     ? isWithinGeofence(
@@ -242,24 +258,16 @@ export async function clockOutAction(data: ClockOutInput) {
   let isOvertime = false;
   let overtimeMinutes = 0;
 
-  if (record.shift_id) {
-    const { data: shift } = await supabase
-      .from("shifts")
-      .select("*")
-      .eq("id", record.shift_id)
-      .single();
-
-    if (shift) {
-      const shiftResult = computeShiftStatus({
-        shift: shift as Shift,
-        clockIn: clockInTime,
-        clockOut: now,
-      });
-      if (shiftResult) {
-        status = shiftResult.status;
-        isOvertime = shiftResult.isOvertime;
-        overtimeMinutes = shiftResult.overtimeMinutes;
-      }
+  if (shift) {
+    const shiftStatusResult = computeShiftStatus({
+      shift,
+      clockIn: clockInTime,
+      clockOut: now,
+    });
+    if (shiftStatusResult) {
+      status = shiftStatusResult.status;
+      isOvertime = shiftStatusResult.isOvertime;
+      overtimeMinutes = shiftStatusResult.overtimeMinutes;
     }
   }
 
@@ -279,7 +287,9 @@ export async function clockOutAction(data: ClockOutInput) {
     })
     .eq("id", parsed.data.attendance_id);
 
-  if (updateError) throw new Error(updateError.message);
+  if (updateError) handleActionError(updateError, "clockOutAction", { attendanceId: parsed.data.attendance_id });
+
+  logger.info("clockOutAction", "Employee clocked out", { attendanceId: parsed.data.attendance_id, totalMinutes, status });
 
   revalidatePath("/dashboard/attendance");
   revalidatePath("/dashboard");
@@ -363,6 +373,6 @@ export async function getMyAttendanceAction(filters?: AttendanceFilters) {
     .lte("clock_in", to.toISOString())
     .order("clock_in", { ascending: false });
 
-  if (error) throw new Error(error.message);
+  if (error) handleActionError(error, "getMyAttendanceAction");
   return data;
 }

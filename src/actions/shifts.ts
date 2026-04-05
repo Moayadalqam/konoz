@@ -11,6 +11,8 @@ import {
   type ShiftWithAssignmentCount,
   type ShiftAssignmentWithDetails,
 } from "@/lib/validations/shift";
+import { handleActionError } from "@/lib/errors";
+import { logger } from "@/lib/logger";
 
 export async function createShiftAction(data: ShiftFormData) {
   await requireRole("admin", "hr_officer");
@@ -31,7 +33,9 @@ export async function createShiftAction(data: ShiftFormData) {
     is_active: parsed.data.is_active,
   });
 
-  if (error) throw new Error(error.message);
+  if (error) handleActionError(error, "createShiftAction", { name: parsed.data.name });
+
+  logger.info("createShiftAction", "Shift created", { name: parsed.data.name });
   revalidatePath("/dashboard/shifts");
 }
 
@@ -59,7 +63,9 @@ export async function updateShiftAction(id: string, data: ShiftFormData) {
     })
     .eq("id", id);
 
-  if (error) throw new Error(error.message);
+  if (error) handleActionError(error, "updateShiftAction", { shiftId: id });
+
+  logger.info("updateShiftAction", "Shift updated", { shiftId: id, name: parsed.data.name });
   revalidatePath("/dashboard/shifts");
 }
 
@@ -75,7 +81,9 @@ export async function deleteShiftAction(id: string) {
     .update({ is_active: false })
     .eq("id", id);
 
-  if (error) throw new Error(error.message);
+  if (error) handleActionError(error, "deleteShiftAction", { shiftId: id });
+
+  logger.info("deleteShiftAction", "Shift deactivated", { shiftId: id });
   revalidatePath("/dashboard/shifts");
 }
 
@@ -89,7 +97,7 @@ export async function getShiftsAction(): Promise<ShiftWithAssignmentCount[]> {
     .eq("is_active", true)
     .order("name");
 
-  if (error) throw new Error(error.message);
+  if (error) handleActionError(error, "getShiftsAction");
   if (!shifts) return [];
 
   // Get assignment counts for all active shifts
@@ -97,7 +105,7 @@ export async function getShiftsAction(): Promise<ShiftWithAssignmentCount[]> {
     .from("shift_assignments")
     .select("shift_id");
 
-  if (countError) throw new Error(countError.message);
+  if (countError) handleActionError(countError, "getShiftsAction");
 
   const countMap: Record<string, number> = {};
   for (const a of assignments || []) {
@@ -128,7 +136,9 @@ export async function assignShiftAction(data: ShiftAssignmentFormData) {
     effective_to: parsed.data.effective_to || null,
   });
 
-  if (error) throw new Error(error.message);
+  if (error) handleActionError(error, "assignShiftAction", { shiftId: parsed.data.shift_id });
+
+  logger.info("assignShiftAction", "Shift assigned", { shiftId: parsed.data.shift_id, employeeId: parsed.data.employee_id, locationId: parsed.data.location_id });
   revalidatePath("/dashboard/shifts");
 }
 
@@ -144,7 +154,9 @@ export async function removeShiftAssignmentAction(id: string) {
     .delete()
     .eq("id", id);
 
-  if (error) throw new Error(error.message);
+  if (error) handleActionError(error, "removeShiftAssignmentAction", { assignmentId: id });
+
+  logger.info("removeShiftAssignmentAction", "Shift assignment removed", { assignmentId: id });
   revalidatePath("/dashboard/shifts");
 }
 
@@ -166,6 +178,6 @@ export async function getShiftAssignmentsAction(
 
   const { data, error } = await query;
 
-  if (error) throw new Error(error.message);
+  if (error) handleActionError(error, "getShiftAssignmentsAction");
   return (data as ShiftAssignmentWithDetails[]) || [];
 }
