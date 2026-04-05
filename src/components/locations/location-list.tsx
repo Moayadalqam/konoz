@@ -1,6 +1,7 @@
 "use client";
 
-import { ExternalLink, Pencil, MapPin } from "lucide-react";
+import Link from "next/link";
+import { ExternalLink, Pencil, MapPin, ChevronRight } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -53,29 +54,31 @@ function formatRadius(meters: number): string {
 
 function LocationCard({ location, onEdit }: { location: LocationWithCount; onEdit?: (location: LocationWithCount) => void }) {
   return (
-    <div className="rounded-lg border border-slate-200 bg-card p-4 dark:border-slate-700">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 flex-1">
-          <p className="truncate font-heading font-semibold text-foreground">
-            {location.name}
-          </p>
-          <p className="mt-0.5 flex items-center gap-1 text-sm text-muted-foreground">
-            <MapPin className="size-3 shrink-0" />
-            {location.city}
-          </p>
+    <div className="rounded-lg border border-slate-200 bg-card dark:border-slate-700 overflow-hidden">
+      {/* Tappable area — links to employee list */}
+      <Link
+        href={`/dashboard/locations/${location.id}`}
+        className="block p-4 transition-colors hover:bg-muted/30 active:bg-muted/50"
+      >
+        <div className="flex items-center justify-between gap-3">
+          <div className="min-w-0 flex-1">
+            <p className="truncate font-heading font-semibold text-foreground">
+              {location.name}
+            </p>
+            <p className="mt-0.5 flex items-center gap-1 text-sm text-muted-foreground">
+              <MapPin className="size-3 shrink-0" />
+              {location.city}
+            </p>
+            <p className="mt-1 text-xs text-muted-foreground">
+              {location.employee_count} employee{location.employee_count !== 1 ? "s" : ""}
+            </p>
+          </div>
+          <ChevronRight className="size-5 shrink-0 text-muted-foreground/40" />
         </div>
-        <StatusBadge isActive={location.is_active} />
-      </div>
+      </Link>
 
-      <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
-        <span>
-          {location.employee_count} employee
-          {location.employee_count !== 1 ? "s" : ""}
-        </span>
-        <span>{formatRadius(location.geofence_radius_meters)} radius</span>
-      </div>
-
-      <div className="mt-3 flex items-center gap-2 border-t border-slate-200 pt-3 dark:border-slate-700">
+      {/* Action buttons */}
+      <div className="flex items-center gap-2 border-t border-slate-200 px-4 py-2.5 dark:border-slate-700">
         <Button variant="outline" size="sm" className="gap-1" onClick={() => onEdit?.(location)}>
           <Pencil className="size-3" data-icon="inline-start" />
           Edit
@@ -132,9 +135,10 @@ export function LocationList({ locations, onEdit }: LocationListProps) {
             {locations.map((location, idx) => (
               <TableRow
                 key={location.id}
-                className={
-                  idx % 2 === 1 ? "bg-muted/20 hover:bg-muted/40" : ""
-                }
+                className={`cursor-pointer ${
+                  idx % 2 === 1 ? "bg-muted/20 hover:bg-muted/40" : "hover:bg-muted/20"
+                }`}
+                onClick={() => window.location.href = `/dashboard/locations/${location.id}`}
               >
                 <TableCell className="font-medium">{location.name}</TableCell>
                 <TableCell className="text-muted-foreground">

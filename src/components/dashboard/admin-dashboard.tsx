@@ -97,17 +97,13 @@ export function AdminDashboard({ profile, pendingCount, attendanceStats }: Admin
           Quick Actions
         </h2>
         <div className="flex flex-wrap gap-3">
+          <Button variant="outline" size="lg" render={<Link href="/dashboard/locations" />}>
+            <BarChart3 className="size-4" />
+            View Locations
+          </Button>
           <Button variant="outline" size="lg" render={<Link href="/admin/users" />}>
             <Shield className="size-4" />
             Manage Users
-          </Button>
-          <Button variant="outline" size="lg" render={<Link href="/dashboard/reports" />}>
-            <BarChart3 className="size-4" />
-            View Reports
-          </Button>
-          <Button variant="outline" size="lg" render={<Link href="/dashboard/employees" />}>
-            <Users className="size-4" />
-            Employees
           </Button>
         </div>
       </div>

@@ -183,15 +183,13 @@ export function ClockInButton() {
 
   const handlePhotoCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) {
-      await submitClockIn(null);
-      return;
-    }
+    if (!file) return; // Photo is required — don't proceed without it
     try {
       const compressed = await compressPhoto(file);
       await submitClockIn(compressed);
     } catch {
-      await submitClockIn(null);
+      toast.error("Photo failed to process. Please try again.");
+      setPhase("photo");
     }
   };
 
@@ -309,7 +307,7 @@ export function ClockInButton() {
             Take a photo
           </p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Snap a quick selfie to verify your presence
+            A selfie is required to verify your presence
           </p>
         </div>
         {gpsAccuracy !== null && <GpsStatus accuracy={gpsAccuracy} />}
@@ -335,12 +333,9 @@ export function ClockInButton() {
           />
         </label>
 
-        <button
-          onClick={() => submitClockIn(null)}
-          className="text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline transition-colors"
-        >
-          Skip photo
-        </button>
+        <p className="text-xs text-muted-foreground/60">
+          Photo is required to complete clock-in
+        </p>
       </div>
     );
   }

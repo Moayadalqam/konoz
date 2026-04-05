@@ -360,6 +360,74 @@ export async function getSiteAttendanceAction(): Promise<SiteEmployeeAttendance[
   });
 }
 
+export async function getLocationAttendanceAction(locationId: string): Promise<SiteEmployeeAttendance[]> {
+  await requireRole("admin", "hr_officer");
+  const supabase = await createClient();
+
+  const { data: employees, error: empError } = await supabase
+    .from("employees")
+    .select("id, full_name, employee_number")
+    .eq("primary_location_id", locationId)
+    .eq("is_active", true)
+    .order("full_name");
+
+  if (empError) throw new Error(empError.message);
+  if (!employees || employees.length === 0) return [];
+
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+
+  const employeeIds = employees.map((e) => e.id);
+
+  const { data: records } = await supabase
+    .from("attendance_records")
+    .select("id, employee_id, clock_in, clock_out, total_minutes, clock_in_method, notes, status, shift_id, is_overtime, overtime_minutes, clock_in_photo_url, clock_in_lat, clock_in_lng, shifts(name)")
+    .in("employee_id", employeeIds)
+    .gte("clock_in", todayStart.toISOString())
+    .order("clock_in", { ascending: false });
+
+  const recordMap = new Map<string, (typeof records extends (infer T)[] | null ? T : never)>();
+  for (const record of records ?? []) {
+    if (!recordMap.has(record.employee_id)) {
+      recordMap.set(record.employee_id, record);
+    }
+  }
+
+  return employees.map((emp) => {
+    const record = recordMap.get(emp.id);
+    const shiftRaw = record?.shifts as unknown;
+    const shiftName = shiftRaw && typeof shiftRaw === "object" && "name" in (shiftRaw as Record<string, unknown>)
+      ? (shiftRaw as { name: string }).name
+      : Array.isArray(shiftRaw) && shiftRaw.length > 0
+        ? (shiftRaw[0] as { name: string }).name
+        : null;
+
+    if (!record) {
+      return { employee_id: emp.id, full_name: emp.full_name, employee_number: emp.employee_number, status: "not_yet" as const };
+    }
+
+    return {
+      employee_id: emp.id,
+      full_name: emp.full_name,
+      employee_number: emp.employee_number,
+      status: (record.clock_out ? "checked_out" : "checked_in") as "checked_in" | "checked_out",
+      clock_in: record.clock_in,
+      clock_out: record.clock_out ?? undefined,
+      total_minutes: record.total_minutes,
+      clock_in_method: record.clock_in_method,
+      attendance_id: record.id,
+      notes: record.notes,
+      shift_name: shiftName,
+      attendance_status: record.status as SiteEmployeeAttendance["attendance_status"],
+      is_overtime: record.is_overtime ?? false,
+      overtime_minutes: record.overtime_minutes ?? 0,
+      clock_in_photo_url: record.clock_in_photo_url,
+      clock_in_lat: record.clock_in_lat,
+      clock_in_lng: record.clock_in_lng,
+    };
+  });
+}
+
 export async function addAttendanceNoteAction(data: AttendanceNoteInput) {
   await requireRole("supervisor", "admin", "hr_officer");
 
