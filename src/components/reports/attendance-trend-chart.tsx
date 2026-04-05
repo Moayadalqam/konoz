@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import {
-  ResponsiveContainer,
   LineChart,
   Line,
   XAxis,
@@ -58,13 +57,35 @@ function CustomTooltip({
   );
 }
 
-export function AttendanceTrendChart({ data }: AttendanceTrendChartProps) {
-  const [mounted, setMounted] = useState(false);
+function useContainerSize(ref: React.RefObject<HTMLDivElement | null>) {
+  const [size, setSize] = useState({ width: 0, height: 0 });
+
+  const updateSize = useCallback(() => {
+    if (!ref.current) return;
+    const { width, height } = ref.current.getBoundingClientRect();
+    if (width > 0 && height > 0) {
+      setSize((prev) =>
+        prev.width === Math.floor(width) && prev.height === Math.floor(height)
+          ? prev
+          : { width: Math.floor(width), height: Math.floor(height) }
+      );
+    }
+  }, [ref]);
 
   useEffect(() => {
-    const frame = requestAnimationFrame(() => setMounted(true));
-    return () => cancelAnimationFrame(frame);
-  }, []);
+    if (!ref.current) return;
+    const observer = new ResizeObserver(updateSize);
+    observer.observe(ref.current);
+    updateSize();
+    return () => observer.disconnect();
+  }, [ref, updateSize]);
+
+  return size;
+}
+
+export function AttendanceTrendChart({ data }: AttendanceTrendChartProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { width, height } = useContainerSize(containerRef);
 
   if (!data.length) {
     return (
@@ -81,14 +102,12 @@ export function AttendanceTrendChart({ data }: AttendanceTrendChartProps) {
     label: formatDate(d.date),
   }));
 
-  if (!mounted) {
-    return <div className="h-[300px] w-full" />;
-  }
-
   return (
-    <div className="h-[300px] w-full" style={{ minWidth: 0, minHeight: 0 }}>
-      <ResponsiveContainer width="100%" height="100%" debounce={50} minWidth={1} minHeight={1}>
+    <div ref={containerRef} className="h-[300px] w-full">
+      {width > 0 && height > 0 && (
         <LineChart
+          width={width}
+          height={height}
           data={formatted}
           margin={{ top: 8, right: 12, left: -8, bottom: 0 }}
         >
@@ -145,7 +164,7 @@ export function AttendanceTrendChart({ data }: AttendanceTrendChartProps) {
             activeDot={{ r: 5, strokeWidth: 2, stroke: "#fff" }}
           />
         </LineChart>
-      </ResponsiveContainer>
+      )}
     </div>
   );
 }

@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import {
-  ResponsiveContainer,
   BarChart,
   Bar,
   XAxis,
@@ -61,13 +60,31 @@ function CustomTooltip({
   );
 }
 
-export function SiteComparisonChart({ data }: SiteComparisonChartProps) {
-  const [mounted, setMounted] = useState(false);
+function useContainerWidth(ref: React.RefObject<HTMLDivElement | null>) {
+  const [width, setWidth] = useState(0);
+
+  const updateWidth = useCallback(() => {
+    if (!ref.current) return;
+    const w = ref.current.getBoundingClientRect().width;
+    if (w > 0) {
+      setWidth((prev) => (prev === Math.floor(w) ? prev : Math.floor(w)));
+    }
+  }, [ref]);
 
   useEffect(() => {
-    const frame = requestAnimationFrame(() => setMounted(true));
-    return () => cancelAnimationFrame(frame);
-  }, []);
+    if (!ref.current) return;
+    const observer = new ResizeObserver(updateWidth);
+    observer.observe(ref.current);
+    updateWidth();
+    return () => observer.disconnect();
+  }, [ref, updateWidth]);
+
+  return width;
+}
+
+export function SiteComparisonChart({ data }: SiteComparisonChartProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const width = useContainerWidth(containerRef);
 
   if (!data.length) {
     return (
@@ -81,14 +98,12 @@ export function SiteComparisonChart({ data }: SiteComparisonChartProps) {
 
   const chartHeight = Math.max(200, data.length * 48 + 40);
 
-  if (!mounted) {
-    return <div style={{ height: chartHeight }} className="w-full" />;
-  }
-
   return (
-    <div style={{ height: chartHeight, minWidth: 0, minHeight: 0 }} className="w-full">
-      <ResponsiveContainer width="100%" height="100%" debounce={50} minWidth={1} minHeight={1}>
+    <div ref={containerRef} style={{ height: chartHeight }} className="w-full">
+      {width > 0 && (
         <BarChart
+          width={width}
+          height={chartHeight}
           data={data}
           layout="vertical"
           margin={{ top: 4, right: 48, left: 8, bottom: 4 }}
@@ -147,7 +162,7 @@ export function SiteComparisonChart({ data }: SiteComparisonChartProps) {
             />
           </Bar>
         </BarChart>
-      </ResponsiveContainer>
+      )}
     </div>
   );
 }
