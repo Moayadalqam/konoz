@@ -1,7 +1,8 @@
 "use server";
 
+import { z } from "zod";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAuth } from "@/lib/auth/dal";
+import { requireRole } from "@/lib/auth/dal";
 import type {
   DailyAttendanceReport,
   DailySiteBreakdown,
@@ -16,11 +17,7 @@ import type {
 } from "@/lib/validations/reports";
 
 async function requireHrOrAdmin() {
-  const profile = await requireAuth();
-  if (profile.role !== "admin" && profile.role !== "hr_officer") {
-    throw new Error("Unauthorized: HR officer or admin access required");
-  }
-  return profile;
+  return requireRole("admin", "hr_officer");
 }
 
 /** Jordan work week: Sat–Thu. Friday = day 5 */
@@ -38,7 +35,18 @@ function getBusinessDays(from: Date, to: Date): number {
   return count;
 }
 
+const dateStringSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD");
+
+function validateDateRange(from: string, to: string) {
+  dateStringSchema.parse(from);
+  dateStringSchema.parse(to);
+  if (new Date(to) < new Date(from)) throw new Error("End date must be after start date");
+  const diffDays = (new Date(to).getTime() - new Date(from).getTime()) / 86400000;
+  if (diffDays > 365) throw new Error("Date range cannot exceed 365 days");
+}
+
 function dateRange(from: string, to: string) {
+  validateDateRange(from, to);
   const start = new Date(`${from}T00:00:00`);
   const end = new Date(`${to}T23:59:59.999`);
   return { start: start.toISOString(), end: end.toISOString(), startDate: start, endDate: end };
@@ -224,7 +232,7 @@ export async function getLateArrivalsReport(
 
   let query = admin
     .from("attendance_records")
-    .select("employee_id, clock_in, employees(full_name, employee_number, primary_location_id, locations(name))")
+    .select("employee_id, clock_in, employees!attendance_records_employee_id_fkey(full_name, employee_number, primary_location_id, locations(name))")
     .eq("status", "late")
     .gte("clock_in", start)
     .lte("clock_in", end);
@@ -283,7 +291,7 @@ export async function getOvertimeReport(
 
   let query = admin
     .from("attendance_records")
-    .select("employee_id, location_id, overtime_minutes, overtime_status, employees(full_name, employee_number, primary_location_id), locations(id, name)")
+    .select("employee_id, location_id, overtime_minutes, overtime_status, employees!attendance_records_employee_id_fkey(full_name, employee_number, primary_location_id), locations(id, name)")
     .eq("is_overtime", true)
     .gte("clock_in", start)
     .lte("clock_in", end);
@@ -535,7 +543,7 @@ export async function getRecentActivityFeed(
   // Get recent records with clock-out events
   const { data: records } = await admin
     .from("attendance_records")
-    .select("id, employee_id, clock_in, clock_out, status, employees(full_name), locations(name)")
+    .select("id, employee_id, clock_in, clock_out, status, employees!attendance_records_employee_id_fkey(full_name), locations(name)")
     .order("updated_at", { ascending: false })
     .limit(limit);
 

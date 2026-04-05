@@ -1,7 +1,7 @@
 "use client";
 
+import { useRef, useState, useEffect, useCallback } from "react";
 import {
-  ResponsiveContainer,
   LineChart,
   Line,
   XAxis,
@@ -57,7 +57,36 @@ function CustomTooltip({
   );
 }
 
+function useContainerSize(ref: React.RefObject<HTMLDivElement | null>) {
+  const [size, setSize] = useState({ width: 0, height: 0 });
+
+  const updateSize = useCallback(() => {
+    if (!ref.current) return;
+    const { width, height } = ref.current.getBoundingClientRect();
+    if (width > 0 && height > 0) {
+      setSize((prev) =>
+        prev.width === Math.floor(width) && prev.height === Math.floor(height)
+          ? prev
+          : { width: Math.floor(width), height: Math.floor(height) }
+      );
+    }
+  }, [ref]);
+
+  useEffect(() => {
+    if (!ref.current) return;
+    const observer = new ResizeObserver(updateSize);
+    observer.observe(ref.current);
+    updateSize();
+    return () => observer.disconnect();
+  }, [ref, updateSize]);
+
+  return size;
+}
+
 export function AttendanceTrendChart({ data }: AttendanceTrendChartProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const { width, height } = useContainerSize(containerRef);
+
   if (!data.length) {
     return (
       <div className="flex h-[300px] items-center justify-center rounded-lg border border-dashed border-border">
@@ -74,9 +103,11 @@ export function AttendanceTrendChart({ data }: AttendanceTrendChartProps) {
   }));
 
   return (
-    <div className="h-[300px] w-full">
-      <ResponsiveContainer width="100%" height="100%">
+    <div ref={containerRef} className="h-[300px] w-full">
+      {width > 0 && height > 0 && (
         <LineChart
+          width={width}
+          height={height}
           data={formatted}
           margin={{ top: 8, right: 12, left: -8, bottom: 0 }}
         >
@@ -133,7 +164,7 @@ export function AttendanceTrendChart({ data }: AttendanceTrendChartProps) {
             activeDot={{ r: 5, strokeWidth: 2, stroke: "#fff" }}
           />
         </LineChart>
-      </ResponsiveContainer>
+      )}
     </div>
   );
 }

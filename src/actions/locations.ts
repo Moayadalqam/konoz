@@ -1,9 +1,11 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { requireRole } from "@/lib/auth/dal";
+import { requireAuth, requireRole } from "@/lib/auth/dal";
 import { revalidatePath } from "next/cache";
 import { locationSchema, type LocationFormData } from "@/lib/validations/location";
+import { handleActionError } from "@/lib/errors";
+import { logger } from "@/lib/logger";
 
 export async function createLocationAction(data: LocationFormData) {
   await requireRole("admin", "hr_officer");
@@ -26,7 +28,9 @@ export async function createLocationAction(data: LocationFormData) {
     is_active: parsed.data.is_active,
   });
 
-  if (error) throw new Error(error.message);
+  if (error) handleActionError(error, "createLocationAction", { name: parsed.data.name });
+
+  logger.info("createLocationAction", "Location created", { name: parsed.data.name });
   revalidatePath("/dashboard/locations");
 }
 
@@ -56,7 +60,9 @@ export async function updateLocationAction(id: string, data: LocationFormData) {
     })
     .eq("id", id);
 
-  if (error) throw new Error(error.message);
+  if (error) handleActionError(error, "updateLocationAction", { locationId: id });
+
+  logger.info("updateLocationAction", "Location updated", { locationId: id, name: parsed.data.name });
   revalidatePath("/dashboard/locations");
 }
 
@@ -72,11 +78,14 @@ export async function deleteLocationAction(id: string) {
     .update({ is_active: false })
     .eq("id", id);
 
-  if (error) throw new Error(error.message);
+  if (error) handleActionError(error, "deleteLocationAction", { locationId: id });
+
+  logger.info("deleteLocationAction", "Location deactivated", { locationId: id });
   revalidatePath("/dashboard/locations");
 }
 
 export async function getLocationsAction() {
+  await requireAuth();
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -84,31 +93,12 @@ export async function getLocationsAction() {
     .select("*")
     .order("name");
 
-  if (error) throw new Error(error.message);
+  if (error) handleActionError(error, "getLocationsAction");
   return data;
 }
 
-export async function getLocationWithCountAction(id: string) {
-  const supabase = await createClient();
-
-  const { data: location, error } = await supabase
-    .from("locations")
-    .select("*")
-    .eq("id", id)
-    .single();
-
-  if (error) throw new Error(error.message);
-
-  const { count } = await supabase
-    .from("employees")
-    .select("*", { count: "exact", head: true })
-    .eq("primary_location_id", id)
-    .eq("is_active", true);
-
-  return { ...location, employee_count: count ?? 0 };
-}
-
 export async function getLocationsWithCountsAction() {
+  await requireAuth();
   const supabase = await createClient();
 
   const { data: locations, error } = await supabase
@@ -116,7 +106,7 @@ export async function getLocationsWithCountsAction() {
     .select("*")
     .order("name");
 
-  if (error) throw new Error(error.message);
+  if (error) handleActionError(error, "getLocationsWithCountsAction");
 
   // Get employee counts per location
   const { data: counts } = await supabase

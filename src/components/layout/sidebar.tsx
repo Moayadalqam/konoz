@@ -13,8 +13,10 @@ import {
   CalendarClock,
   ClipboardCheck,
   Bell,
+  LogOut,
   type LucideIcon,
 } from "lucide-react";
+import { signOutAction } from "@/actions/auth";
 import type { Profile, AppRole } from "@/lib/auth/types";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
@@ -164,7 +166,7 @@ export function Sidebar({ profile }: { profile: Profile }) {
         </ul>
       </nav>
 
-      {/* User info at bottom */}
+      {/* User info + sign out at bottom */}
       <div className="shrink-0 border-t border-border p-3">
         <div className="flex items-center gap-3 rounded-lg px-2 py-2">
           <div className="flex size-9 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
@@ -179,6 +181,15 @@ export function Sidebar({ profile }: { profile: Profile }) {
             </Badge>
           </div>
         </div>
+        <form action={signOutAction} className="mt-1 px-2">
+          <button
+            type="submit"
+            className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+          >
+            <LogOut className="size-4" />
+            Sign out
+          </button>
+        </form>
       </div>
     </div>
   );

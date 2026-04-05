@@ -127,7 +127,7 @@ export function NotificationDropdown({
             variant="ghost"
             size="sm"
             className="w-full text-primary"
-            render={<Link href="/dashboard/notifications" />}
+            render={(props) => <Link {...props} href="/dashboard/notifications" />}
             onClick={onClose}
           >
             View all

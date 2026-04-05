@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getTodayStart } from "@/lib/date-utils";
 import type { NotificationType } from "@/lib/validations/notifications";
 
 async function insertNotifications(
@@ -102,8 +103,7 @@ export async function notifyLateArrival(
 export async function generateDailySummaryIfNeeded(profileId: string) {
   const admin = createAdminClient();
 
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
+  const todayStart = getTodayStart();
 
   const { data: existing } = await admin
     .from("notifications")

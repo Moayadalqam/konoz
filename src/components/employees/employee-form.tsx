@@ -156,7 +156,7 @@ export function EmployeeForm({
               id="phone"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder="+966-5X-XXX-XXXX"
+              placeholder="+962 7XX XXX XXX"
             />
           </div>
 

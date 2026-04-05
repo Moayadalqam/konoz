@@ -1,21 +1,3 @@
-import { z } from "zod";
-
-// ── Zod Schemas ──
-
-export const dateRangeSchema = z.object({
-  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD"),
-  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Must be YYYY-MM-DD"),
-});
-
-export type DateRange = z.infer<typeof dateRangeSchema>;
-
-export const reportFilterSchema = dateRangeSchema.extend({
-  location_id: z.string().uuid().optional(),
-  employee_id: z.string().uuid().optional(),
-});
-
-export type ReportFilter = z.infer<typeof reportFilterSchema>;
-
 // ── Report Data Types ──
 
 export interface DailySiteBreakdown {

@@ -1,6 +1,6 @@
+import { requireAuth } from "@/lib/auth/dal";
 import { redirect } from "next/navigation";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAuth } from "@/lib/auth/dal";
 import { ReportsPage } from "@/components/reports/reports-page";
 
 export const metadata = {

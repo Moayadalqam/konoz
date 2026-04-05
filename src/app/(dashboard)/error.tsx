@@ -2,7 +2,6 @@
 
 import { AlertTriangle, RefreshCw, Home } from "lucide-react"
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
 
 export default function DashboardError({
   error,
@@ -26,14 +25,20 @@ export default function DashboardError({
           </p>
         </div>
         <div className="flex items-center justify-center gap-3">
-          <Button onClick={() => unstable_retry()} variant="outline" size="lg">
+          <button
+            onClick={() => unstable_retry()}
+            className="inline-flex items-center gap-2 rounded-lg border border-input bg-background px-4 py-2 text-sm font-medium text-foreground hover:bg-accent transition-colors"
+          >
             <RefreshCw className="size-4" />
             Try again
-          </Button>
-          <Button render={<Link href="/dashboard" />} variant="ghost" size="lg">
+          </button>
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+          >
             <Home className="size-4" />
             Dashboard
-          </Button>
+          </Link>
         </div>
       </div>
     </div>

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { Clock } from "lucide-react";
 
 import { signOutAction } from "@/actions/auth";
@@ -29,12 +30,18 @@ export default function PendingApprovalPage() {
         </CardDescription>
       </CardHeader>
 
-      <CardContent className="flex justify-center">
+      <CardContent className="flex flex-col items-center gap-3">
         <form action={signOutAction}>
           <Button type="submit" variant="outline">
             Sign out
           </Button>
         </form>
+        <Link
+          href="/login"
+          className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+        >
+          Back to sign in
+        </Link>
       </CardContent>
     </Card>
   );

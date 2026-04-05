@@ -1,7 +1,9 @@
 "use server";
 
+import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { requireRole } from "@/lib/auth/dal";
+import { getTodayStart } from "@/lib/date-utils";
 import { revalidatePath } from "next/cache";
 import {
   batchClockInSchema,
@@ -11,27 +13,10 @@ import {
   type SiteEmployeeAttendance,
 } from "@/lib/validations/attendance";
 import { isWithinGeofence } from "@/lib/geo/geofence";
+import { handleActionError } from "@/lib/errors";
 import { computeShiftStatus } from "@/lib/shifts/time-rules";
+import { resolveEmployeeShift } from "@/lib/shifts/resolve";
 import type { Shift } from "@/lib/validations/shift";
-
-async function resolveEmployeeShift(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  employeeId: string
-): Promise<Shift | null> {
-  const { data: result } = await supabase.rpc("get_employee_shift", {
-    p_employee_id: employeeId,
-  });
-
-  if (!result) return null;
-
-  const { data: shift } = await supabase
-    .from("shifts")
-    .select("*")
-    .eq("id", result)
-    .single();
-
-  return shift as Shift | null;
-}
 
 async function getEmployeeForProfile(
   supabase: Awaited<ReturnType<typeof createClient>>,
@@ -79,7 +64,7 @@ export async function batchClockInAction(data: BatchClockInInput) {
     .eq("primary_location_id", location.id)
     .eq("is_active", true);
 
-  if (empError) throw new Error(empError.message);
+  if (empError) handleActionError(empError, "batchClockInAction");
 
   if (!employees || employees.length !== parsed.data.employee_ids.length) {
     throw new Error(
@@ -88,8 +73,7 @@ export async function batchClockInAction(data: BatchClockInInput) {
   }
 
   // Check which employees already have open clock-ins today
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
+  const todayStart = getTodayStart();
 
   const { data: existingRecords } = await supabase
     .from("attendance_records")
@@ -121,11 +105,13 @@ export async function batchClockInAction(data: BatchClockInInput) {
 
   const now = new Date().toISOString();
 
-  // Resolve shifts for all eligible employees
+  // Batch-resolve shifts for all eligible employees (avoid N+1)
   const shiftMap = new Map<string, Shift | null>();
-  for (const employeeId of eligibleIds) {
-    const shift = await resolveEmployeeShift(supabase, employeeId);
-    shiftMap.set(employeeId, shift);
+  const shiftResults = await Promise.all(
+    eligibleIds.map((id) => resolveEmployeeShift(supabase, id, location.id).then((s) => [id, s] as const))
+  );
+  for (const [id, shift] of shiftResults) {
+    shiftMap.set(id, shift);
   }
 
   const records = eligibleIds.map((employeeId) => {
@@ -166,7 +152,7 @@ export async function batchClockInAction(data: BatchClockInInput) {
     .from("attendance_records")
     .insert(records);
 
-  if (insertError) throw new Error(insertError.message);
+  if (insertError) handleActionError(insertError, "batchClockInAction");
 
   revalidatePath("/dashboard/attendance");
   revalidatePath("/dashboard");
@@ -182,7 +168,9 @@ export async function batchClockInAction(data: BatchClockInInput) {
 export async function batchClockOutAction(employeeIds: string[]) {
   const profile = await requireRole("supervisor", "admin", "hr_officer");
 
-  if (!employeeIds.length) throw new Error("No employees selected");
+  // Validate input
+  const parsed = z.array(z.string().uuid()).min(1).max(100).safeParse(employeeIds);
+  if (!parsed.success) throw new Error("Invalid employee selection");
 
   const supabase = await createClient();
   const supervisor = await getEmployeeForProfile(supabase, profile.id);
@@ -198,33 +186,41 @@ export async function batchClockOutAction(employeeIds: string[]) {
     .eq("location_id", supervisor.primary_location_id!)
     .is("clock_out", null);
 
-  if (fetchError) throw new Error(fetchError.message);
+  if (fetchError) handleActionError(fetchError, "batchClockOutAction");
 
   if (!openRecords || openRecords.length === 0) {
     throw new Error("No open clock-in records found for selected employees");
   }
 
-  for (const record of openRecords) {
+  // Pre-fetch all unique shifts in one query (avoid N+1)
+  const uniqueShiftIds = [...new Set(openRecords.map((r) => r.shift_id).filter(Boolean))] as string[];
+  const shiftCache = new Map<string, Shift>();
+  if (uniqueShiftIds.length > 0) {
+    const { data: shifts } = await supabase
+      .from("shifts")
+      .select("*")
+      .in("id", uniqueShiftIds);
+    for (const s of shifts ?? []) {
+      shiftCache.set(s.id, s as Shift);
+    }
+  }
+
+  // Build all updates, then execute in parallel
+  const updates = openRecords.map((record) => {
     const clockInTime = new Date(record.clock_in);
     const totalMinutes = Math.round(
       (now.getTime() - clockInTime.getTime()) / 60000
     );
 
-    // Evaluate shift status on clock-out (late, early departure, overtime)
     let status: string = "present";
     let isOvertime = false;
     let overtimeMinutes = 0;
 
     if (record.shift_id) {
-      const { data: shift } = await supabase
-        .from("shifts")
-        .select("*")
-        .eq("id", record.shift_id)
-        .single();
-
+      const shift = shiftCache.get(record.shift_id);
       if (shift) {
         const shiftResult = computeShiftStatus({
-          shift: shift as Shift,
+          shift,
           clockIn: clockInTime,
           clockOut: now,
         });
@@ -236,7 +232,7 @@ export async function batchClockOutAction(employeeIds: string[]) {
       }
     }
 
-    const { error } = await supabase
+    return supabase
       .from("attendance_records")
       .update({
         clock_out: now.toISOString(),
@@ -247,9 +243,10 @@ export async function batchClockOutAction(employeeIds: string[]) {
         overtime_minutes: overtimeMinutes,
       })
       .eq("id", record.id);
+  });
 
-    if (!error) closedCount++;
-  }
+  const results = await Promise.all(updates);
+  closedCount = results.filter((r) => !r.error).length;
 
   revalidatePath("/dashboard/attendance");
   revalidatePath("/dashboard");
@@ -270,12 +267,11 @@ export async function getSiteAttendanceAction(): Promise<SiteEmployeeAttendance[
     .eq("is_active", true)
     .order("full_name");
 
-  if (empError) throw new Error(empError.message);
+  if (empError) handleActionError(empError, "getSiteEmployeesAction");
   if (!employees || employees.length === 0) return [];
 
   // Get today's attendance records for these employees
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
+  const todayStart = getTodayStart();
 
   const employeeIds = employees.map((e) => e.id);
 
@@ -350,7 +346,7 @@ export async function getSiteAttendanceAction(): Promise<SiteEmployeeAttendance[
 }
 
 export async function addAttendanceNoteAction(data: AttendanceNoteInput) {
-  await requireRole("supervisor", "admin", "hr_officer");
+  const profile = await requireRole("supervisor", "admin", "hr_officer");
 
   const parsed = attendanceNoteSchema.safeParse(data);
   if (!parsed.success) {
@@ -359,36 +355,62 @@ export async function addAttendanceNoteAction(data: AttendanceNoteInput) {
 
   const supabase = await createClient();
 
+  // Supervisors can only modify records at their own location
+  if (profile.role === "supervisor") {
+    const supervisor = await getEmployeeForProfile(supabase, profile.id);
+    const { data: record } = await supabase
+      .from("attendance_records")
+      .select("location_id")
+      .eq("id", parsed.data.attendance_id)
+      .single();
+
+    if (record?.location_id !== supervisor.primary_location_id) {
+      throw new Error("You can only modify records at your assigned location");
+    }
+  }
+
   const { error } = await supabase
     .from("attendance_records")
     .update({ notes: parsed.data.notes })
     .eq("id", parsed.data.attendance_id);
 
-  if (error) throw new Error(error.message);
+  if (error) handleActionError(error, "addAttendanceNoteAction");
 
   revalidatePath("/dashboard/attendance");
 }
+
+const flagAnomalySchema = z.object({
+  attendanceId: z.string().uuid(),
+  reason: z.string().min(1).max(500),
+});
 
 export async function flagAnomalyAction(
   attendanceId: string,
   reason: string
 ) {
-  await requireRole("supervisor", "admin", "hr_officer");
+  const profile = await requireRole("supervisor", "admin", "hr_officer");
 
-  if (!attendanceId || !reason) {
-    throw new Error("Attendance ID and reason are required");
-  }
+  const parsed = flagAnomalySchema.safeParse({ attendanceId, reason });
+  if (!parsed.success) throw new Error(parsed.error.issues[0].message);
 
   const supabase = await createClient();
 
-  // Get current notes
+  // Get current notes + location for ownership check
   const { data: record, error: fetchError } = await supabase
     .from("attendance_records")
-    .select("notes")
+    .select("notes, location_id")
     .eq("id", attendanceId)
     .single();
 
-  if (fetchError) throw new Error(fetchError.message);
+  if (fetchError) handleActionError(fetchError, "flagAnomalyAction");
+
+  // Supervisors can only flag records at their own location
+  if (profile.role === "supervisor") {
+    const supervisor = await getEmployeeForProfile(supabase, profile.id);
+    if (record?.location_id !== supervisor.primary_location_id) {
+      throw new Error("You can only flag records at your assigned location");
+    }
+  }
 
   const existingNotes = record?.notes ?? "";
   const flaggedNotes = `[ANOMALY] ${reason}${existingNotes ? `\n${existingNotes}` : ""}`;
@@ -398,7 +420,7 @@ export async function flagAnomalyAction(
     .update({ notes: flaggedNotes })
     .eq("id", attendanceId);
 
-  if (error) throw new Error(error.message);
+  if (error) handleActionError(error, "flagAnomalyAction");
 
   revalidatePath("/dashboard/attendance");
 }

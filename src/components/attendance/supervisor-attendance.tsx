@@ -410,12 +410,13 @@ export function SupervisorAttendance({
                       {emp.attendance_id && (
                         <DropdownMenu>
                           <DropdownMenuTrigger
-                            render={
+                            render={(props) => (
                               <Button
+                                {...props}
                                 variant="ghost"
                                 size="icon-sm"
                               />
-                            }
+                            )}
                           >
                             <MoreHorizontal className="size-4" />
                             <span className="sr-only">Actions</span>

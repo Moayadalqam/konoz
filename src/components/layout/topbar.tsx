@@ -9,6 +9,7 @@ import { NotificationBell } from "@/components/notifications/notification-bell";
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -47,18 +48,20 @@ export function Topbar({ profile }: { profile: Profile }) {
         </DropdownMenuTrigger>
 
         <DropdownMenuContent side="bottom" align="end" sideOffset={8} className="w-56">
-          <DropdownMenuLabel>
-            <div className="flex flex-col gap-0.5">
-              <span className="text-sm font-medium text-foreground">
-                {profile.full_name}
-              </span>
-              <span className="text-xs text-muted-foreground font-normal">
-                {profile.email}
-              </span>
-            </div>
-          </DropdownMenuLabel>
+          <DropdownMenuGroup>
+            <DropdownMenuLabel>
+              <div className="flex flex-col gap-0.5">
+                <span className="text-sm font-medium text-foreground">
+                  {profile.full_name}
+                </span>
+                <span className="text-xs text-muted-foreground font-normal">
+                  {profile.email}
+                </span>
+              </div>
+            </DropdownMenuLabel>
+          </DropdownMenuGroup>
           <DropdownMenuSeparator />
-          <DropdownMenuItem render={<Link href="/dashboard/profile" />}>
+          <DropdownMenuItem render={(props) => <Link {...props} href="/dashboard/profile" />}>
             <User className="size-4" />
             My Profile
           </DropdownMenuItem>

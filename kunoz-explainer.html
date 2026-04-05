@@ -1,0 +1,2194 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kunoz — System Overview & Testing Guide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Reset & Base ──────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; font-size: 16px; }
+    body {
+      font-family: 'Inter', system-ui, sans-serif;
+      color: #1E293B;
+      background: #F8FAFC;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ── Brand Tokens ─────────────────────── */
+    :root {
+      --teal: #0D7377;
+      --teal-dark: #094B4E;
+      --teal-light: #E0F2F1;
+      --teal-glow: rgba(13, 115, 119, 0.15);
+      --amber: #F59E0B;
+      --amber-light: #FEF3C7;
+      --emerald: #059669;
+      --emerald-light: #D1FAE5;
+      --red: #DC2626;
+      --red-light: #FEE2E2;
+      --blue: #3B82F6;
+      --blue-light: #DBEAFE;
+      --purple: #7C3AED;
+      --purple-light: #EDE9FE;
+      --slate-900: #0F172A;
+      --slate-800: #1E293B;
+      --slate-600: #475569;
+      --slate-400: #94A3B8;
+      --slate-200: #E2E8F0;
+      --slate-100: #F1F5F9;
+      --white: #FFFFFF;
+      --radius: 16px;
+      --radius-sm: 10px;
+      --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04);
+      --shadow-lg: 0 4px 24px rgba(0,0,0,0.08), 0 12px 48px rgba(0,0,0,0.04);
+    }
+
+    /* ── Typography ───────────────────────── */
+    h1, h2, h3, h4 { font-family: 'Plus Jakarta Sans', sans-serif; font-weight: 700; line-height: 1.2; }
+    h1 { font-size: clamp(2.2rem, 5vw, 3.5rem); }
+    h2 { font-size: clamp(1.6rem, 3.5vw, 2.4rem); }
+    h3 { font-size: clamp(1.1rem, 2vw, 1.4rem); }
+    .mono { font-family: 'JetBrains Mono', monospace; }
+
+    /* ── Layout ───────────────────────────── */
+    .container { width: 100%; max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+    section { padding: 80px 0; }
+    @media (max-width: 768px) { section { padding: 56px 0; } }
+
+    /* ── Animations ───────────────────────── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    @keyframes slideRight {
+      from { opacity: 0; transform: translateX(-20px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes glow {
+      0%, 100% { box-shadow: 0 0 20px var(--teal-glow); }
+      50% { box-shadow: 0 0 40px var(--teal-glow), 0 0 60px rgba(13, 115, 119, 0.08); }
+    }
+    .fade-up { animation: fadeUp 0.7s ease-out both; }
+    .fade-up-d1 { animation-delay: 0.1s; }
+    .fade-up-d2 { animation-delay: 0.2s; }
+    .fade-up-d3 { animation-delay: 0.3s; }
+    .fade-up-d4 { animation-delay: 0.4s; }
+    .fade-up-d5 { animation-delay: 0.5s; }
+    .fade-up-d6 { animation-delay: 0.6s; }
+
+    /* ── Section Label ────────────────────── */
+    .section-label {
+      display: inline-flex; align-items: center; gap: 8px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem; font-weight: 500; letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--teal); background: var(--teal-light);
+      padding: 6px 14px; border-radius: 100px;
+      margin-bottom: 16px;
+    }
+    .section-label::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--teal); }
+
+    .section-title { margin-bottom: 12px; }
+    .section-desc { color: var(--slate-600); font-size: 1.1rem; max-width: 640px; margin-bottom: 48px; }
+
+    /* ═══════════════════════════════════════
+       STICKY NAV
+       ═══════════════════════════════════════ */
+    .sticky-nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+      padding: 0;
+    }
+    .sticky-nav-inner {
+      display: flex; align-items: center; gap: 0;
+      max-width: 1200px; margin: 0 auto;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .sticky-nav-inner::-webkit-scrollbar { display: none; }
+    .sticky-nav a {
+      display: flex; align-items: center; gap: 6px;
+      padding: 14px 18px;
+      font-size: 0.78rem; font-weight: 500;
+      color: rgba(255,255,255,0.55);
+      text-decoration: none;
+      white-space: nowrap;
+      border-bottom: 2px solid transparent;
+      transition: all 0.2s;
+    }
+    .sticky-nav a:hover { color: rgba(255,255,255,0.9); border-bottom-color: var(--teal); }
+    .sticky-nav .nav-logo {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 800; letter-spacing: 0.2em; font-size: 0.75rem;
+      color: var(--amber); padding: 14px 24px 14px 20px;
+    }
+    .sticky-nav .nav-divider {
+      width: 1px; height: 20px; background: rgba(255,255,255,0.12);
+      flex-shrink: 0;
+    }
+    .nav-badge {
+      font-size: 0.6rem; font-weight: 700;
+      padding: 2px 6px; border-radius: 4px;
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .nav-badge.test { background: var(--amber); color: var(--slate-900); }
+    .nav-badge.system { background: rgba(13,115,119,0.3); color: #4FD1C5; }
+
+    /* ═══════════════════════════════════════
+       1. HERO
+       ═══════════════════════════════════════ */
+    .hero {
+      position: relative;
+      background: linear-gradient(135deg, var(--slate-900) 0%, var(--teal-dark) 60%, var(--teal) 100%);
+      color: var(--white);
+      padding: 100px 0 80px;
+      overflow: hidden;
+    }
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0;
+      background:
+        radial-gradient(circle at 20% 80%, rgba(13,115,119,0.3) 0%, transparent 50%),
+        radial-gradient(circle at 80% 20%, rgba(245,158,11,0.15) 0%, transparent 40%);
+      pointer-events: none;
+    }
+    .hero-grid {
+      position: absolute; inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 60px 60px;
+      pointer-events: none;
+    }
+    .hero .container { position: relative; z-index: 1; }
+    .hero-logo {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 800; font-size: 1rem;
+      letter-spacing: 0.35em; text-transform: uppercase;
+      color: var(--amber);
+      margin-bottom: 24px;
+    }
+    .hero h1 { margin-bottom: 20px; max-width: 700px; }
+    .hero h1 span { color: var(--amber); }
+    .hero-desc {
+      font-size: 1.2rem; color: rgba(255,255,255,0.75);
+      max-width: 560px; margin-bottom: 32px; line-height: 1.7;
+    }
+    .hero-purpose {
+      display: inline-flex; align-items: center; gap: 10px;
+      background: rgba(245,158,11,0.12);
+      border: 1px solid rgba(245,158,11,0.3);
+      border-radius: var(--radius-sm);
+      padding: 12px 20px;
+      font-size: 0.88rem; color: var(--amber);
+      margin-bottom: 40px;
+    }
+    .hero-stats { display: flex; gap: 40px; flex-wrap: wrap; }
+    .hero-stat {
+      text-align: center;
+      animation: fadeUp 0.6s ease-out both;
+    }
+    .hero-stat-num {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 2.4rem; font-weight: 800; color: var(--amber);
+      line-height: 1;
+    }
+    .hero-stat-label {
+      font-size: 0.85rem; color: rgba(255,255,255,0.6);
+      margin-top: 6px; letter-spacing: 0.04em;
+    }
+
+    @media (max-width: 600px) {
+      .hero { padding: 72px 0 56px; }
+      .hero-stats { gap: 24px; }
+      .hero-stat-num { font-size: 1.8rem; }
+    }
+
+    /* ═══════════════════════════════════════
+       2. ROLES
+       ═══════════════════════════════════════ */
+    .roles-section { background: var(--white); }
+    .roles-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 24px;
+    }
+    .role-card {
+      background: var(--white);
+      border: 1px solid var(--slate-200);
+      border-radius: var(--radius);
+      padding: 32px 28px;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .role-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-lg);
+      border-color: transparent;
+    }
+    .role-card::before {
+      content: '';
+      position: absolute; top: 0; left: 0; right: 0;
+      height: 4px;
+    }
+    .role-card.admin::before { background: var(--teal); }
+    .role-card.hr::before { background: var(--purple); }
+    .role-card.supervisor::before { background: var(--amber); }
+    .role-card.employee::before { background: var(--emerald); }
+
+    .role-icon {
+      width: 52px; height: 52px;
+      border-radius: 14px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.5rem;
+      margin-bottom: 20px;
+    }
+    .role-card.admin .role-icon { background: var(--teal-light); color: var(--teal); }
+    .role-card.hr .role-icon { background: var(--purple-light); color: var(--purple); }
+    .role-card.supervisor .role-icon { background: var(--amber-light); color: var(--amber); }
+    .role-card.employee .role-icon { background: var(--emerald-light); color: var(--emerald); }
+
+    .role-card h3 { margin-bottom: 8px; }
+    .role-card .role-subtitle {
+      font-size: 0.85rem; color: var(--slate-400);
+      margin-bottom: 16px;
+    }
+    .role-perms { list-style: none; }
+    .role-perms li {
+      font-size: 0.9rem; color: var(--slate-600);
+      padding: 5px 0;
+      padding-left: 22px;
+      position: relative;
+    }
+    .role-perms li::before {
+      content: '\2713';
+      position: absolute; left: 0; top: 5px;
+      font-size: 0.8rem; font-weight: 700;
+    }
+    .role-card.admin .role-perms li::before { color: var(--teal); }
+    .role-card.hr .role-perms li::before { color: var(--purple); }
+    .role-card.supervisor .role-perms li::before { color: var(--amber); }
+    .role-card.employee .role-perms li::before { color: var(--emerald); }
+
+    /* ═══════════════════════════════════════
+       3. CLOCK-IN FLOW
+       ═══════════════════════════════════════ */
+    .flow-section { background: var(--slate-100); }
+    .flow-container {
+      display: flex;
+      align-items: flex-start;
+      gap: 0;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .flow-step {
+      display: flex; flex-direction: column; align-items: center;
+      text-align: center;
+      flex: 0 0 auto;
+      width: 160px;
+      position: relative;
+    }
+    .flow-step-icon {
+      width: 68px; height: 68px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.6rem;
+      background: var(--white);
+      border: 3px solid var(--teal);
+      box-shadow: 0 4px 16px var(--teal-glow);
+      margin-bottom: 14px;
+      position: relative;
+      z-index: 2;
+    }
+    .flow-step-icon.success { border-color: var(--emerald); box-shadow: 0 4px 16px rgba(5,150,105,0.15); }
+    .flow-step-icon.warning { border-color: var(--amber); box-shadow: 0 4px 16px rgba(245,158,11,0.15); }
+    .flow-step-icon.offline { border-color: var(--slate-400); box-shadow: 0 4px 16px rgba(148,163,184,0.2); }
+
+    .flow-step h4 { font-size: 0.9rem; margin-bottom: 4px; }
+    .flow-step p { font-size: 0.78rem; color: var(--slate-600); line-height: 1.4; }
+
+    .flow-arrow {
+      display: flex; align-items: center; justify-content: center;
+      width: 48px; height: 68px;
+      color: var(--teal);
+      font-size: 1.4rem;
+      flex-shrink: 0;
+    }
+
+    .flow-branch {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+      margin-top: 40px;
+      width: 100%;
+    }
+    .flow-branch-row {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 20px 24px;
+      border-radius: var(--radius-sm);
+      border: 1px solid;
+    }
+    .flow-branch-row.online {
+      background: rgba(5,150,105,0.06);
+      border-color: rgba(5,150,105,0.2);
+    }
+    .flow-branch-row.offline {
+      background: rgba(245,158,11,0.06);
+      border-color: rgba(245,158,11,0.2);
+    }
+    .flow-branch-icon {
+      width: 42px; height: 42px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem;
+      flex-shrink: 0;
+    }
+    .flow-branch-row.online .flow-branch-icon { background: var(--emerald-light); }
+    .flow-branch-row.offline .flow-branch-icon { background: var(--amber-light); }
+    .flow-branch-text h4 { font-size: 0.95rem; margin-bottom: 2px; }
+    .flow-branch-text p { font-size: 0.82rem; color: var(--slate-600); }
+
+    @media (max-width: 768px) {
+      .flow-container { flex-direction: column; align-items: center; gap: 0; }
+      .flow-step { width: 100%; max-width: 260px; }
+      .flow-arrow { transform: rotate(90deg); height: 36px; width: 100%; }
+    }
+
+    /* ═══════════════════════════════════════
+       4. OFFLINE ARCHITECTURE
+       ═══════════════════════════════════════ */
+    .offline-section { background: var(--slate-900); color: var(--white); }
+    .offline-section .section-label { background: rgba(13,115,119,0.2); color: #4FD1C5; }
+    .offline-section .section-label::before { background: #4FD1C5; }
+    .offline-section .section-desc { color: rgba(255,255,255,0.6); }
+
+    .offline-pipeline {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 0;
+      position: relative;
+    }
+    .offline-pipeline::before {
+      content: '';
+      position: absolute;
+      top: 48px;
+      left: 10%;
+      right: 10%;
+      height: 3px;
+      background: linear-gradient(90deg, var(--amber) 0%, var(--teal) 50%, var(--emerald) 100%);
+      border-radius: 2px;
+      z-index: 0;
+    }
+    @media (max-width: 640px) {
+      .offline-pipeline::before {
+        top: auto; left: 48px;
+        width: 3px; height: calc(100% - 96px);
+        top: 48px;
+        background: linear-gradient(180deg, var(--amber) 0%, var(--teal) 50%, var(--emerald) 100%);
+      }
+      .offline-pipeline { grid-template-columns: 1fr; }
+    }
+
+    .pipe-step {
+      display: flex; flex-direction: column; align-items: center;
+      text-align: center; padding: 0 16px;
+      position: relative; z-index: 1;
+    }
+    .pipe-dot {
+      width: 56px; height: 56px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem;
+      margin-bottom: 16px;
+      border: 3px solid;
+    }
+    .pipe-step:nth-child(1) .pipe-dot { background: rgba(245,158,11,0.15); border-color: var(--amber); }
+    .pipe-step:nth-child(2) .pipe-dot { background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.6); }
+    .pipe-step:nth-child(3) .pipe-dot { background: rgba(13,115,119,0.15); border-color: var(--teal); }
+    .pipe-step:nth-child(4) .pipe-dot { background: rgba(5,150,105,0.15); border-color: var(--emerald); }
+
+    .pipe-step h4 { font-size: 0.95rem; margin-bottom: 6px; }
+    .pipe-step p { font-size: 0.8rem; color: rgba(255,255,255,0.5); line-height: 1.5; }
+
+    .offline-callout {
+      margin-top: 48px;
+      background: rgba(245,158,11,0.08);
+      border: 1px solid rgba(245,158,11,0.25);
+      border-radius: var(--radius);
+      padding: 24px 28px;
+      display: flex; align-items: flex-start; gap: 16px;
+    }
+    .offline-callout-icon {
+      font-size: 1.5rem; flex-shrink: 0; margin-top: 2px;
+    }
+    .offline-callout h4 { color: var(--amber); margin-bottom: 4px; font-size: 1rem; }
+    .offline-callout p { font-size: 0.88rem; color: rgba(255,255,255,0.6); }
+
+    /* ═══════════════════════════════════════
+       5. SUPERVISOR BATCH
+       ═══════════════════════════════════════ */
+    .batch-section { background: var(--white); }
+    .batch-visual {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 32px;
+      align-items: center;
+    }
+    @media (max-width: 768px) {
+      .batch-visual { grid-template-columns: 1fr; }
+      .batch-arrow-col { transform: rotate(90deg); }
+    }
+    .batch-card {
+      background: var(--slate-100);
+      border-radius: var(--radius);
+      padding: 28px;
+    }
+    .batch-card h4 {
+      font-size: 1rem; margin-bottom: 16px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .batch-employee {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 14px;
+      background: var(--white);
+      border-radius: var(--radius-sm);
+      margin-bottom: 8px;
+      border: 1px solid var(--slate-200);
+    }
+    .batch-check {
+      width: 22px; height: 22px;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.75rem; font-weight: 700; color: var(--white);
+    }
+    .batch-check.on { background: var(--teal); }
+    .batch-check.off { background: var(--slate-200); }
+    .batch-emp-name { font-size: 0.88rem; font-weight: 500; }
+    .batch-emp-id { font-size: 0.75rem; color: var(--slate-400); font-family: 'JetBrains Mono', monospace; }
+    .batch-emp-status {
+      margin-left: auto; font-size: 0.72rem; font-weight: 600;
+      padding: 3px 10px; border-radius: 100px;
+    }
+    .batch-emp-status.not-yet { background: var(--slate-200); color: var(--slate-600); }
+    .batch-emp-status.done { background: var(--emerald-light); color: var(--emerald); }
+
+    .batch-arrow-col {
+      font-size: 2.5rem; color: var(--teal);
+      display: flex; align-items: center; justify-content: center;
+    }
+
+    .batch-result-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 10px 14px;
+      background: var(--emerald-light);
+      border-radius: var(--radius-sm);
+      margin-bottom: 8px;
+      border: 1px solid rgba(5,150,105,0.2);
+    }
+    .batch-result-check {
+      color: var(--emerald); font-weight: 700; font-size: 1rem;
+    }
+    .batch-result-text { font-size: 0.85rem; color: var(--slate-800); }
+    .batch-result-time { margin-left: auto; font-size: 0.75rem; color: var(--slate-400); font-family: 'JetBrains Mono', monospace; }
+
+    /* ═══════════════════════════════════════
+       6. SHIFTS & TIME RULES
+       ═══════════════════════════════════════ */
+    .shifts-section { background: var(--slate-100); }
+    .timeline-container {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 32px;
+      box-shadow: var(--shadow);
+      overflow-x: auto;
+    }
+    .timeline-row {
+      display: flex; align-items: center; gap: 0;
+      margin-bottom: 32px;
+      position: relative;
+      min-width: 700px;
+    }
+    .timeline-row:last-child { margin-bottom: 0; }
+    .timeline-label {
+      width: 140px; flex-shrink: 0;
+      font-weight: 600; font-size: 0.88rem;
+    }
+    .timeline-bar-wrap {
+      flex: 1;
+      height: 48px;
+      background: var(--slate-100);
+      border-radius: 8px;
+      position: relative;
+      overflow: hidden;
+    }
+    .timeline-bar {
+      position: absolute; top: 4px; bottom: 4px;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.72rem; font-weight: 600; color: var(--white);
+      letter-spacing: 0.02em;
+    }
+    .timeline-bar.shift { background: var(--teal); left: 20%; right: 18%; }
+    .timeline-bar.grace { background: rgba(245,158,11,0.3); left: 20%; width: 5%; border-radius: 6px 0 0 6px; }
+    .timeline-bar.break-bar { background: rgba(255,255,255,0.25); left: 45%; width: 8%; }
+    .timeline-bar.overtime { background: var(--purple); opacity: 0.8; }
+
+    .timeline-marker {
+      position: absolute; top: -8px; bottom: -8px;
+      width: 3px; border-radius: 2px;
+      z-index: 2;
+    }
+    .timeline-marker.late { background: var(--red); }
+    .timeline-marker.early { background: var(--amber); }
+    .timeline-marker.ok { background: var(--emerald); }
+    .timeline-marker-label {
+      position: absolute; top: -24px;
+      font-size: 0.68rem; font-weight: 600; white-space: nowrap;
+      transform: translateX(-50%);
+    }
+    .timeline-marker.late .timeline-marker-label { color: var(--red); }
+    .timeline-marker.early .timeline-marker-label { color: var(--amber); }
+    .timeline-marker.ok .timeline-marker-label { color: var(--emerald); }
+
+    .timeline-legend {
+      display: flex; gap: 24px; flex-wrap: wrap;
+      margin-top: 24px; padding-top: 20px;
+      border-top: 1px solid var(--slate-200);
+    }
+    .legend-item {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 0.82rem; color: var(--slate-600);
+    }
+    .legend-dot {
+      width: 12px; height: 12px; border-radius: 4px;
+    }
+
+    /* ═══════════════════════════════════════
+       7. REPORTS & HR ACTIONS
+       ═══════════════════════════════════════ */
+    .reports-section { background: var(--white); }
+    .reports-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 20px;
+      margin-bottom: 56px;
+    }
+    .report-card {
+      padding: 24px;
+      border-radius: var(--radius);
+      border: 1px solid var(--slate-200);
+      background: var(--white);
+      transition: all 0.25s ease;
+    }
+    .report-card:hover {
+      border-color: var(--teal);
+      box-shadow: 0 4px 20px var(--teal-glow);
+      transform: translateY(-2px);
+    }
+    .report-card-icon {
+      width: 44px; height: 44px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem;
+      margin-bottom: 14px;
+      background: var(--teal-light); color: var(--teal);
+    }
+    .report-card h4 { font-size: 0.95rem; margin-bottom: 6px; }
+    .report-card p { font-size: 0.82rem; color: var(--slate-600); line-height: 1.5; }
+    .report-card .badge {
+      display: inline-block;
+      font-size: 0.68rem; font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 100px;
+      margin-top: 10px;
+    }
+    .badge-xlsx { background: var(--emerald-light); color: var(--emerald); }
+
+    /* HR actions */
+    .hr-actions-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 20px;
+    }
+    .hr-card {
+      padding: 24px;
+      border-radius: var(--radius);
+      border: 1px solid;
+      transition: all 0.25s ease;
+    }
+    .hr-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-lg); }
+    .hr-card.correction { border-color: rgba(59,130,246,0.2); background: rgba(59,130,246,0.03); }
+    .hr-card.overtime { border-color: rgba(124,58,237,0.2); background: rgba(124,58,237,0.03); }
+    .hr-card.warning { border-color: rgba(245,158,11,0.2); background: rgba(245,158,11,0.03); }
+    .hr-card.leave { border-color: rgba(5,150,105,0.2); background: rgba(5,150,105,0.03); }
+
+    .hr-card-icon {
+      width: 44px; height: 44px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem;
+      margin-bottom: 14px;
+    }
+    .hr-card.correction .hr-card-icon { background: var(--blue-light); }
+    .hr-card.overtime .hr-card-icon { background: var(--purple-light); }
+    .hr-card.warning .hr-card-icon { background: var(--amber-light); }
+    .hr-card.leave .hr-card-icon { background: var(--emerald-light); }
+
+    .hr-card h4 { font-size: 0.95rem; margin-bottom: 6px; }
+    .hr-card p { font-size: 0.82rem; color: var(--slate-600); line-height: 1.5; }
+
+    /* ═══════════════════════════════════════
+       8. NOTIFICATIONS
+       ═══════════════════════════════════════ */
+    .notif-section { background: var(--slate-100); }
+    .notif-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 20px;
+    }
+    .notif-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 24px;
+      border: 1px solid var(--slate-200);
+      display: flex; gap: 16px; align-items: flex-start;
+      transition: all 0.25s ease;
+    }
+    .notif-card:hover { box-shadow: var(--shadow); transform: translateY(-2px); }
+    .notif-card-icon {
+      width: 44px; height: 44px; min-width: 44px;
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem;
+    }
+    .notif-card.geofence .notif-card-icon { background: var(--red-light); }
+    .notif-card.late .notif-card-icon { background: var(--amber-light); }
+    .notif-card.summary .notif-card-icon { background: var(--blue-light); }
+    .notif-card.sync .notif-card-icon { background: var(--emerald-light); }
+
+    .notif-card h4 { font-size: 0.92rem; margin-bottom: 4px; }
+    .notif-card p { font-size: 0.8rem; color: var(--slate-600); line-height: 1.45; }
+    .notif-card .notif-to {
+      font-size: 0.72rem; color: var(--slate-400); margin-top: 6px;
+      font-family: 'JetBrains Mono', monospace;
+    }
+
+    /* ═══════════════════════════════════════
+       9. SECURITY
+       ═══════════════════════════════════════ */
+    .security-section { background: var(--white); }
+    .security-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+    }
+    .sec-card {
+      padding: 28px;
+      border-radius: var(--radius);
+      background: var(--slate-100);
+      border: 1px solid var(--slate-200);
+    }
+    .sec-card h4 {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 1rem; margin-bottom: 10px;
+    }
+    .sec-card p { font-size: 0.88rem; color: var(--slate-600); line-height: 1.6; }
+    .sec-icon {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem;
+      background: var(--teal-light); color: var(--teal);
+    }
+
+    /* ═══════════════════════════════════════
+       10. TECH STACK
+       ═══════════════════════════════════════ */
+    .tech-section {
+      background: linear-gradient(135deg, var(--slate-900) 0%, var(--teal-dark) 100%);
+      color: var(--white);
+    }
+    .tech-section .section-label { background: rgba(13,115,119,0.2); color: #4FD1C5; }
+    .tech-section .section-label::before { background: #4FD1C5; }
+    .tech-section .section-desc { color: rgba(255,255,255,0.6); }
+
+    .tech-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 20px;
+    }
+    .tech-card {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: var(--radius);
+      padding: 24px;
+      text-align: center;
+      transition: all 0.3s ease;
+    }
+    .tech-card:hover {
+      background: rgba(255,255,255,0.1);
+      border-color: rgba(255,255,255,0.2);
+      transform: translateY(-3px);
+    }
+    .tech-card-icon {
+      font-size: 2rem;
+      margin-bottom: 12px;
+      display: block;
+    }
+    .tech-card h4 { font-size: 0.95rem; margin-bottom: 4px; }
+    .tech-card p { font-size: 0.78rem; color: rgba(255,255,255,0.5); }
+
+    /* ═══════════════════════════════════════
+       11. TESTING GUIDE
+       ═══════════════════════════════════════ */
+    .testing-section {
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+      color: var(--white);
+      padding: 100px 0;
+    }
+    .testing-section .section-label { background: rgba(245,158,11,0.15); color: var(--amber); }
+    .testing-section .section-label::before { background: var(--amber); }
+    .testing-section .section-desc { color: rgba(255,255,255,0.6); }
+
+    /* Test Accounts Table */
+    .test-accounts {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 0;
+      border-radius: var(--radius);
+      overflow: hidden;
+      margin-bottom: 48px;
+    }
+    .test-accounts th {
+      background: rgba(255,255,255,0.08);
+      padding: 14px 20px;
+      text-align: left;
+      font-size: 0.78rem;
+      font-family: 'JetBrains Mono', monospace;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--amber);
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .test-accounts td {
+      padding: 14px 20px;
+      font-size: 0.88rem;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+      color: rgba(255,255,255,0.8);
+    }
+    .test-accounts tr:last-child td { border-bottom: none; }
+    .test-accounts tr:hover td { background: rgba(255,255,255,0.04); }
+    .test-accounts .role-pill {
+      display: inline-block;
+      padding: 3px 12px;
+      border-radius: 100px;
+      font-size: 0.72rem;
+      font-weight: 600;
+    }
+    .test-accounts .role-pill.admin { background: rgba(13,115,119,0.2); color: #4FD1C5; }
+    .test-accounts .role-pill.hr { background: rgba(124,58,237,0.2); color: #A78BFA; }
+    .test-accounts .role-pill.supervisor { background: rgba(245,158,11,0.2); color: var(--amber); }
+    .test-accounts .role-pill.employee { background: rgba(5,150,105,0.2); color: #6EE7B7; }
+    .test-accounts .mono-cell {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.82rem;
+      color: rgba(255,255,255,0.6);
+    }
+
+    /* Scenario Cards */
+    .scenario-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+      gap: 24px;
+    }
+    .scenario-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.1);
+      border-radius: var(--radius);
+      padding: 0;
+      overflow: hidden;
+      transition: all 0.3s;
+    }
+    .scenario-card:hover {
+      border-color: rgba(255,255,255,0.2);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    }
+    .scenario-header {
+      display: flex; align-items: center; gap: 14px;
+      padding: 20px 24px;
+      border-bottom: 1px solid rgba(255,255,255,0.06);
+    }
+    .scenario-num {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-weight: 800; font-size: 0.9rem;
+      background: rgba(245,158,11,0.15);
+      color: var(--amber);
+      flex-shrink: 0;
+    }
+    .scenario-header h4 { font-size: 1rem; color: var(--white); }
+    .scenario-header .scenario-role {
+      margin-left: auto;
+      font-size: 0.68rem; font-weight: 600;
+      padding: 3px 10px; border-radius: 100px;
+      background: rgba(255,255,255,0.08);
+      color: rgba(255,255,255,0.5);
+    }
+    .scenario-body { padding: 20px 24px; }
+    .scenario-steps { list-style: none; counter-reset: step; }
+    .scenario-steps li {
+      counter-increment: step;
+      padding: 8px 0 8px 36px;
+      font-size: 0.85rem;
+      color: rgba(255,255,255,0.65);
+      line-height: 1.5;
+      position: relative;
+    }
+    .scenario-steps li::before {
+      content: counter(step);
+      position: absolute; left: 0; top: 8px;
+      width: 24px; height: 24px;
+      border-radius: 6px;
+      background: rgba(255,255,255,0.06);
+      color: rgba(255,255,255,0.4);
+      font-size: 0.72rem; font-weight: 600;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'JetBrains Mono', monospace;
+    }
+    .scenario-steps li strong { color: rgba(255,255,255,0.9); }
+    .scenario-expect {
+      margin-top: 16px;
+      padding: 12px 16px;
+      border-radius: var(--radius-sm);
+      background: rgba(5,150,105,0.08);
+      border: 1px solid rgba(5,150,105,0.2);
+      font-size: 0.82rem;
+      color: #6EE7B7;
+      line-height: 1.5;
+    }
+    .scenario-expect strong { color: #6EE7B7; }
+
+    /* ═══════════════════════════════════════
+       12. TESTING CHECKLIST
+       ═══════════════════════════════════════ */
+    .checklist-section {
+      background: var(--white);
+      padding: 100px 0;
+    }
+    .checklist-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 24px;
+    }
+    .checklist-group {
+      background: var(--slate-100);
+      border-radius: var(--radius);
+      padding: 28px;
+      border: 1px solid var(--slate-200);
+    }
+    .checklist-group-header {
+      display: flex; align-items: center; gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--slate-200);
+    }
+    .checklist-group-icon {
+      width: 40px; height: 40px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem;
+    }
+    .checklist-group-header h4 { font-size: 1rem; }
+    .checklist-group-header .count {
+      margin-left: auto;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem; color: var(--slate-400);
+    }
+
+    .check-item {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 8px 0;
+    }
+    .check-item input[type="checkbox"] {
+      width: 20px; height: 20px;
+      border-radius: 6px;
+      border: 2px solid var(--slate-200);
+      appearance: none;
+      cursor: pointer;
+      flex-shrink: 0;
+      margin-top: 2px;
+      transition: all 0.15s;
+      background: var(--white);
+    }
+    .check-item input[type="checkbox"]:checked {
+      background: var(--emerald);
+      border-color: var(--emerald);
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M12.207 4.793a1 1 0 0 1 0 1.414l-5 5a1 1 0 0 1-1.414 0l-2.5-2.5a1 1 0 0 1 1.414-1.414L6.5 9.086l4.293-4.293a1 1 0 0 1 1.414 0z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: center;
+      background-size: 14px;
+    }
+    .check-item label {
+      font-size: 0.88rem; color: var(--slate-600);
+      cursor: pointer; line-height: 1.5;
+    }
+    .check-item input[type="checkbox"]:checked + label {
+      color: var(--slate-400);
+      text-decoration: line-through;
+    }
+
+    /* ═══════════════════════════════════════
+       GEOFENCE VISUAL (reused)
+       ═══════════════════════════════════════ */
+    .geofence-visual {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 40px;
+    }
+    .geofence-diagram {
+      position: relative;
+      width: 260px; height: 260px;
+    }
+    .geofence-ring {
+      position: absolute;
+      border-radius: 50%;
+      border: 2px dashed;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+    }
+    .geofence-ring.outer {
+      width: 240px; height: 240px;
+      border-color: rgba(13, 115, 119, 0.3);
+      background: radial-gradient(circle, rgba(13,115,119,0.06) 0%, transparent 70%);
+    }
+    .geofence-ring.inner {
+      width: 160px; height: 160px;
+      border-color: rgba(13, 115, 119, 0.5);
+      background: radial-gradient(circle, rgba(13,115,119,0.12) 0%, transparent 70%);
+    }
+    .geofence-center {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      width: 48px; height: 48px;
+      border-radius: 50%;
+      background: var(--teal);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.4rem;
+      box-shadow: 0 0 24px var(--teal-glow);
+      animation: glow 3s ease-in-out infinite;
+      z-index: 2;
+    }
+    .geofence-pin {
+      position: absolute;
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 0.7rem; font-weight: 700; color: var(--white);
+      z-index: 3;
+    }
+    .geofence-pin.inside { background: var(--emerald); top: 38%; left: 62%; }
+    .geofence-pin.outside { background: var(--red); top: 8%; left: 78%; }
+    .geofence-label {
+      position: absolute;
+      font-size: 0.68rem; font-weight: 600; color: var(--slate-400);
+    }
+    .geofence-label.radius { bottom: 2px; left: 50%; transform: translateX(-50%); font-family: 'JetBrains Mono', monospace; }
+
+    /* Sub-section headers */
+    .sub-header {
+      margin-bottom: 28px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--slate-200);
+    }
+    .sub-header h3 { margin-bottom: 4px; }
+    .sub-header p { color: var(--slate-600); font-size: 0.92rem; }
+
+    /* ═══════════════════════════════════════
+       ARCHITECTURE DIAGRAM
+       ═══════════════════════════════════════ */
+    .arch-section {
+      background: var(--slate-100);
+      padding: 100px 0;
+    }
+    .arch-diagram {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 40px;
+      box-shadow: var(--shadow);
+      overflow-x: auto;
+    }
+    .arch-layer {
+      display: flex; align-items: stretch; gap: 16px;
+      margin-bottom: 12px;
+      min-width: 700px;
+    }
+    .arch-label {
+      width: 120px; flex-shrink: 0;
+      display: flex; align-items: center;
+      font-weight: 700; font-size: 0.78rem;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--slate-400);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+    .arch-boxes {
+      flex: 1;
+      display: flex; gap: 12px;
+      flex-wrap: wrap;
+    }
+    .arch-box {
+      flex: 1;
+      min-width: 140px;
+      padding: 16px 20px;
+      border-radius: var(--radius-sm);
+      text-align: center;
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+    .arch-box.client {
+      background: rgba(13,115,119,0.08);
+      border: 1px solid rgba(13,115,119,0.2);
+      color: var(--teal);
+    }
+    .arch-box.local {
+      background: rgba(245,158,11,0.08);
+      border: 1px solid rgba(245,158,11,0.2);
+      color: var(--amber);
+    }
+    .arch-box.server {
+      background: rgba(124,58,237,0.08);
+      border: 1px solid rgba(124,58,237,0.2);
+      color: var(--purple);
+    }
+    .arch-box.db {
+      background: rgba(5,150,105,0.08);
+      border: 1px solid rgba(5,150,105,0.2);
+      color: var(--emerald);
+    }
+    .arch-box small {
+      display: block;
+      font-weight: 400;
+      font-size: 0.72rem;
+      opacity: 0.7;
+      margin-top: 4px;
+    }
+    .arch-connector {
+      display: flex; align-items: center; justify-content: center;
+      min-width: 700px;
+      padding: 6px 0;
+      margin-left: 120px;
+    }
+    .arch-connector-line {
+      flex: 1;
+      height: 2px;
+      background: repeating-linear-gradient(90deg, var(--slate-200) 0, var(--slate-200) 8px, transparent 8px, transparent 16px);
+    }
+    .arch-connector-label {
+      padding: 0 16px;
+      font-size: 0.72rem;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--slate-400);
+      white-space: nowrap;
+    }
+
+    /* ═══════════════════════════════════════
+       FOOTER
+       ═══════════════════════════════════════ */
+    .footer {
+      background: var(--slate-900);
+      color: rgba(255,255,255,0.4);
+      text-align: center;
+      padding: 32px 24px;
+      font-size: 0.82rem;
+    }
+    .footer strong { color: var(--amber); font-weight: 600; }
+  </style>
+</head>
+<body>
+
+  <!-- STICKY NAV -->
+  <nav class="sticky-nav">
+    <div class="sticky-nav-inner">
+      <div class="nav-logo">KUNOZ</div>
+      <div class="nav-divider"></div>
+      <a href="#hero">Overview</a>
+      <a href="#roles">Roles</a>
+      <a href="#clockin">Clock-In</a>
+      <a href="#offline">Offline</a>
+      <a href="#batch">Batch</a>
+      <a href="#shifts">Shifts</a>
+      <a href="#reports">Reports</a>
+      <a href="#notifs">Alerts</a>
+      <a href="#arch">Architecture</a>
+      <a href="#security">Security</a>
+      <a href="#tech">Tech</a>
+      <div class="nav-divider"></div>
+      <a href="#testing" style="color: var(--amber);">Testing Guide <span class="nav-badge test">QA</span></a>
+      <a href="#checklist">Checklist</a>
+    </div>
+  </nav>
+
+  <!-- ═══════ 1. HERO ═══════ -->
+  <section class="hero" id="hero">
+    <div class="hero-grid"></div>
+    <div class="container">
+      <div class="hero-logo fade-up">K U N O Z</div>
+      <h1 class="fade-up fade-up-d1">Reliable Attendance Tracking That Works <span>Even Without Internet</span></h1>
+      <p class="hero-desc fade-up fade-up-d2">A complete workforce management system built for construction sites and factories &mdash; where connectivity is unreliable but accountability isn't optional.</p>
+      <div class="hero-purpose fade-up fade-up-d3">
+        This document explains how the system works and how to test every feature before the client demo.
+      </div>
+      <div class="hero-stats">
+        <div class="hero-stat fade-up fade-up-d3">
+          <div class="hero-stat-num">8</div>
+          <div class="hero-stat-label">Locations</div>
+        </div>
+        <div class="hero-stat fade-up fade-up-d4">
+          <div class="hero-stat-num">70</div>
+          <div class="hero-stat-label">Employees</div>
+        </div>
+        <div class="hero-stat fade-up fade-up-d5">
+          <div class="hero-stat-num">4</div>
+          <div class="hero-stat-label">User Roles</div>
+        </div>
+        <div class="hero-stat fade-up fade-up-d6">
+          <div class="hero-stat-num">6</div>
+          <div class="hero-stat-label">Report Types</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════ 2. USER ROLES ═══════ -->
+  <section class="roles-section" id="roles">
+    <div class="container">
+      <div class="section-label">User Roles</div>
+      <h2 class="section-title">Four Roles, Clear Boundaries</h2>
+      <p class="section-desc">Every user sees exactly what they need &mdash; no more, no less. Role-based access is enforced at every layer from the UI down to the database.</p>
+      <div class="roles-grid">
+        <div class="role-card admin fade-up">
+          <div class="role-icon">&#x1F6E1;</div>
+          <h3>Admin</h3>
+          <div class="role-subtitle">System Owner</div>
+          <ul class="role-perms">
+            <li>Approve / reject registrations</li>
+            <li>Assign user roles</li>
+            <li>Manage all locations &amp; employees</li>
+            <li>Full access to reports &amp; HR actions</li>
+            <li>System-wide configuration</li>
+          </ul>
+        </div>
+        <div class="role-card hr fade-up fade-up-d1">
+          <div class="role-icon">&#x1F4CB;</div>
+          <h3>HR Officer</h3>
+          <div class="role-subtitle">Operations &amp; Compliance</div>
+          <ul class="role-perms">
+            <li>View all employee attendance</li>
+            <li>Generate &amp; export 6 report types</li>
+            <li>Correct attendance records</li>
+            <li>Approve / reject overtime</li>
+            <li>Issue warnings &amp; mark leave</li>
+          </ul>
+        </div>
+        <div class="role-card supervisor fade-up fade-up-d2">
+          <div class="role-icon">&#x1F477;</div>
+          <h3>Supervisor</h3>
+          <div class="role-subtitle">Site-Level Manager</div>
+          <ul class="role-perms">
+            <li>View live site attendance</li>
+            <li>Batch clock-in for workers</li>
+            <li>Add notes to records</li>
+            <li>Flag anomalies</li>
+            <li>Clock in/out themselves</li>
+          </ul>
+        </div>
+        <div class="role-card employee fade-up fade-up-d3">
+          <div class="role-icon">&#x1F464;</div>
+          <h3>Employee</h3>
+          <div class="role-subtitle">Self-Service</div>
+          <ul class="role-perms">
+            <li>One-tap clock in/out</li>
+            <li>Works offline</li>
+            <li>View own attendance history</li>
+            <li>Receive sync confirmations</li>
+            <li>Manage profile</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════ 3. CLOCK-IN FLOW ═══════ -->
+  <section class="flow-section" id="clockin">
+    <div class="container">
+      <div class="section-label">Clock-In Flow</div>
+      <h2 class="section-title">One Tap to Clock In</h2>
+      <p class="section-desc">GPS-verified attendance in seconds. The system captures location, validates the geofence, detects shift status, and records everything automatically.</p>
+
+      <!-- Geofence Diagram -->
+      <div style="display: flex; align-items: center; justify-content: center; gap: 48px; flex-wrap: wrap; margin-bottom: 48px;">
+        <div class="geofence-diagram">
+          <div class="geofence-ring outer"></div>
+          <div class="geofence-ring inner"></div>
+          <div class="geofence-center">&#x1F3ED;</div>
+          <div class="geofence-pin inside">&#x2713;</div>
+          <div class="geofence-pin outside">&#x2717;</div>
+          <div class="geofence-label radius">200m radius</div>
+        </div>
+        <div style="max-width: 280px;">
+          <div style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px;">
+            <div style="display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--slate-600);">
+              <div style="width: 10px; height: 10px; border-radius: 50%; background: var(--teal);"></div>
+              Work Site Location
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--slate-600);">
+              <div style="width: 10px; height: 10px; border-radius: 50%; background: var(--emerald);"></div>
+              Inside Geofence &mdash; Clock-in allowed
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; font-size: 0.82rem; color: var(--slate-600);">
+              <div style="width: 10px; height: 10px; border-radius: 50%; background: var(--red);"></div>
+              Outside Geofence &mdash; HR alerted
+            </div>
+          </div>
+          <p style="font-size: 0.78rem; color: var(--slate-400); line-height: 1.5;">
+            Geofence radius is configurable per site (50m &ndash; 5,000m). Default is 200m. Uses the Haversine formula for accurate GPS distance calculation.
+          </p>
+        </div>
+      </div>
+
+      <!-- Step Flow -->
+      <div class="flow-container">
+        <div class="flow-step fade-up">
+          <div class="flow-step-icon">&#x1F446;</div>
+          <h4>Tap Clock-In</h4>
+          <p>Employee opens app and taps the big green button</p>
+        </div>
+        <div class="flow-arrow">&#x2192;</div>
+        <div class="flow-step fade-up fade-up-d1">
+          <div class="flow-step-icon">&#x1F4CD;</div>
+          <h4>GPS Captured</h4>
+          <p>High-accuracy GPS coordinates acquired from device</p>
+        </div>
+        <div class="flow-arrow">&#x2192;</div>
+        <div class="flow-step fade-up fade-up-d2">
+          <div class="flow-step-icon">&#x1F30D;</div>
+          <h4>Geofence Check</h4>
+          <p>Distance from site calculated. Inside or outside?</p>
+        </div>
+        <div class="flow-arrow">&#x2192;</div>
+        <div class="flow-step fade-up fade-up-d3">
+          <div class="flow-step-icon">&#x23F0;</div>
+          <h4>Shift Detection</h4>
+          <p>On time? Late? Overtime? Auto-computed from shift rules</p>
+        </div>
+        <div class="flow-arrow">&#x2192;</div>
+        <div class="flow-step fade-up fade-up-d4">
+          <div class="flow-step-icon success">&#x2705;</div>
+          <h4>Confirmed</h4>
+          <p>Record saved. Location name and time shown to employee</p>
+        </div>
+      </div>
+
+      <!-- Branch: Online vs Offline -->
+      <div class="flow-branch">
+        <div class="flow-branch-row online fade-up fade-up-d3">
+          <div class="flow-branch-icon">&#x1F7E2;</div>
+          <div class="flow-branch-text">
+            <h4>Online Path</h4>
+            <p>Record goes directly to the server. GPS validated server-side. Notifications fired (geofence violation, late arrival) immediately.</p>
+          </div>
+        </div>
+        <div class="flow-branch-row offline fade-up fade-up-d4">
+          <div class="flow-branch-icon">&#x1F4E1;</div>
+          <div class="flow-branch-text">
+            <h4>Offline Path</h4>
+            <p>Record saved to IndexedDB on the phone. When internet returns, the sync engine replays the action to the server automatically. No data is lost.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════ 4. OFFLINE ARCHITECTURE ═══════ -->
+  <section class="offline-section" id="offline">
+    <div class="container">
+      <div class="section-label">Offline-First</div>
+      <h2 class="section-title" style="color: var(--white);">Works Without Internet</h2>
+      <p class="section-desc">Construction sites have unreliable connectivity. Kunoz doesn't just handle it &mdash; it's built for it. Every clock-in works offline and syncs seamlessly when the connection returns.</p>
+
+      <div class="offline-pipeline">
+        <div class="pipe-step fade-up">
+          <div class="pipe-dot">&#x1F4F1;</div>
+          <h4>Clock-In Offline</h4>
+          <p>Employee taps clock-in. No internet detected. GPS and timestamp captured locally.</p>
+        </div>
+        <div class="pipe-step fade-up fade-up-d1">
+          <div class="pipe-dot">&#x1F4BE;</div>
+          <h4>Stored in IndexedDB</h4>
+          <p>Record saved to the device's local database with a unique session ID. Pending counter shows in the UI.</p>
+        </div>
+        <div class="pipe-step fade-up fade-up-d2">
+          <div class="pipe-dot">&#x1F504;</div>
+          <h4>Auto-Sync Engine</h4>
+          <p>When connectivity returns, the sync engine replays pending actions in order. Clock-ins first, then clock-outs.</p>
+        </div>
+        <div class="pipe-step fade-up fade-up-d3">
+          <div class="pipe-dot">&#x2601;</div>
+          <h4>Server Confirmed</h4>
+          <p>Records validated and stored on the server. Employee gets a sync confirmation notification. Conflicts resolved automatically.</p>
+        </div>
+      </div>
+
+      <div class="offline-callout fade-up">
+        <div class="offline-callout-icon">&#x26A0;</div>
+        <div>
+          <h4>Conflict Resolution</h4>
+          <p>If the server already has a record (e.g., supervisor batch-checked the employee in), the duplicate is detected and treated as synced. Server timestamps always win. Failed syncs are shown in a review dialog where employees can retry or discard.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════ 5. SUPERVISOR BATCH ═══════ -->
+  <section class="batch-section" id="batch">
+    <div class="container">
+      <div class="section-label">Supervisor Actions</div>
+      <h2 class="section-title">Batch Clock-In for Workers Without Phones</h2>
+      <p class="section-desc">Not every laborer has a smartphone. Supervisors can clock in multiple employees at once using their own GPS location &mdash; one tap for the whole team.</p>
+
+      <div class="batch-visual">
+        <div class="batch-card fade-up">
+          <h4>&#x1F4CB; Select Employees</h4>
+          <div class="batch-employee">
+            <div class="batch-check on">&#x2713;</div>
+            <div>
+              <div class="batch-emp-name">Ahmed Hassan</div>
+              <div class="batch-emp-id">KNZ-009</div>
+            </div>
+            <div class="batch-emp-status not-yet">Not yet</div>
+          </div>
+          <div class="batch-employee">
+            <div class="batch-check on">&#x2713;</div>
+            <div>
+              <div class="batch-emp-name">Muhammad Bilal</div>
+              <div class="batch-emp-id">KNZ-010</div>
+            </div>
+            <div class="batch-emp-status not-yet">Not yet</div>
+          </div>
+          <div class="batch-employee">
+            <div class="batch-check on">&#x2713;</div>
+            <div>
+              <div class="batch-emp-name">Rafiqul Islam</div>
+              <div class="batch-emp-id">KNZ-011</div>
+            </div>
+            <div class="batch-emp-status not-yet">Not yet</div>
+          </div>
+          <div class="batch-employee">
+            <div class="batch-check off"></div>
+            <div>
+              <div class="batch-emp-name">Sultan Al-Harbi</div>
+              <div class="batch-emp-id">KNZ-008</div>
+            </div>
+            <div class="batch-emp-status done">Checked in</div>
+          </div>
+        </div>
+
+        <div class="batch-arrow-col">&#x27A1;</div>
+
+        <div class="batch-card fade-up fade-up-d2">
+          <h4>&#x2705; Records Created</h4>
+          <div class="batch-result-row">
+            <div class="batch-result-check">&#x2713;</div>
+            <div class="batch-result-text">Ahmed Hassan &mdash; <strong style="color: var(--emerald);">Present</strong></div>
+            <div class="batch-result-time">07:02</div>
+          </div>
+          <div class="batch-result-row">
+            <div class="batch-result-check">&#x2713;</div>
+            <div class="batch-result-text">Muhammad Bilal &mdash; <strong style="color: var(--amber);">Late</strong></div>
+            <div class="batch-result-time">07:02</div>
+          </div>
+          <div class="batch-result-row">
+            <div class="batch-result-check">&#x2713;</div>
+            <div class="batch-result-text">Rafiqul Islam &mdash; <strong style="color: var(--emerald);">Present</strong></div>
+            <div class="batch-result-time">07:02</div>
+          </div>
+          <div style="margin-top: 16px; font-size: 0.78rem; color: var(--slate-400); line-height: 1.5;">
+            Each employee's shift is resolved individually. Late/present status is computed per their assigned shift. Supervisor's GPS is used for all records. Method recorded as <span class="mono" style="color: var(--teal);">supervisor_batch</span>.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════ 6. SHIFTS ═══════ -->
+  <section class="shifts-section" id="shifts">
+    <div class="container">
+      <div class="section-label">Shifts &amp; Time Rules</div>
+      <h2 class="section-title">Automatic Late, Early &amp; Overtime Detection</h2>
+      <p class="section-desc">Define shift templates and assign them to locations or individuals. The system auto-detects tardiness, early departures, and overtime &mdash; including Ramadan hours.</p>
+
+      <div class="timeline-container fade-up">
+        <div style="margin-bottom: 8px;">
+          <strong style="font-size: 0.85rem; color: var(--slate-600);">Day Shift: 07:00 &ndash; 17:00 (15 min grace, 60 min break)</strong>
+        </div>
+        <div class="timeline-row">
+          <div class="timeline-label">Shift Block</div>
+          <div class="timeline-bar-wrap">
+            <div class="timeline-bar shift" style="left: 18%; right: 10%;">07:00 &mdash; 17:00</div>
+            <div class="timeline-bar grace" style="left: 18%; width: 4%; background: rgba(245,158,11,0.4);"></div>
+            <div class="timeline-bar break-bar" style="left: 43%; width: 6%;"></div>
+          </div>
+        </div>
+        <div class="timeline-row">
+          <div class="timeline-label" style="color: var(--emerald);">On Time</div>
+          <div class="timeline-bar-wrap">
+            <div class="timeline-marker ok" style="left: 19%;"><div class="timeline-marker-label">06:58 &#x2713;</div></div>
+          </div>
+        </div>
+        <div class="timeline-row">
+          <div class="timeline-label" style="color: var(--red);">Late Arrival</div>
+          <div class="timeline-bar-wrap">
+            <div class="timeline-marker late" style="left: 26%;"><div class="timeline-marker-label">07:32 &#x2717; Late</div></div>
+          </div>
+        </div>
+        <div class="timeline-row">
+          <div class="timeline-label" style="color: var(--amber);">Early Departure</div>
+          <div class="timeline-bar-wrap">
+            <div class="timeline-marker early" style="left: 72%;"><div class="timeline-marker-label">15:30 &#x26A0;</div></div>
+          </div>
+        </div>
+        <div class="timeline-row">
+          <div class="timeline-label" style="color: var(--purple);">Overtime</div>
+          <div class="timeline-bar-wrap">
+            <div class="timeline-bar overtime" style="left: 82%; right: 2%;">+2h OT</div>
+          </div>
+        </div>
+        <div class="timeline-legend">
+          <div class="legend-item"><div class="legend-dot" style="background: var(--teal);"></div> Shift Duration</div>
+          <div class="legend-item"><div class="legend-dot" style="background: var(--amber);"></div> Grace Period (15m)</div>
+          <div class="legend-item"><div class="legend-dot" style="background: var(--emerald);"></div> On-Time Clock-In</div>
+          <div class="legend-item"><div class="legend-dot" style="background: var(--red);"></div> Late (past grace)</div>
+          <div class="legend-item"><div class="legend-dot" style="background: var(--purple);"></div> Overtime</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════ 7. REPORTS ═══════ -->
+  <section class="reports-section" id="reports">
+    <div class="container">
+      <div class="section-label">Reports</div>
+      <h2 class="section-title">Comprehensive Analytics &amp; Exports</h2>
+      <p class="section-desc">Six report types give HR and admins full visibility into attendance patterns, overtime costs, and workforce productivity. Every report exports to Excel.</p>
+
+      <div class="reports-grid">
+        <div class="report-card fade-up">
+          <div class="report-card-icon">&#x1F4C5;</div>
+          <h4>Daily Attendance</h4>
+          <p>Per-site breakdown: present, late, absent, on leave. Pick any date.</p>
+          <span class="badge badge-xlsx">XLSX Export</span>
+        </div>
+        <div class="report-card fade-up fade-up-d1">
+          <div class="report-card-icon">&#x1F4CA;</div>
+          <h4>Employee Summary</h4>
+          <p>Date range per employee: days worked, total hours, overtime, absences, late count.</p>
+          <span class="badge badge-xlsx">XLSX Export</span>
+        </div>
+        <div class="report-card fade-up fade-up-d2">
+          <div class="report-card-icon">&#x23F1;</div>
+          <h4>Late Arrivals</h4>
+          <p>Grouped by employee with frequency count and specific dates.</p>
+          <span class="badge badge-xlsx">XLSX Export</span>
+        </div>
+        <div class="report-card fade-up fade-up-d3">
+          <div class="report-card-icon">&#x1F4B0;</div>
+          <h4>Overtime Report</h4>
+          <p>By employee and by site. Total OT minutes, approval status, employee count.</p>
+          <span class="badge badge-xlsx">XLSX Export</span>
+        </div>
+        <div class="report-card fade-up fade-up-d4">
+          <div class="report-card-icon">&#x1F6AB;</div>
+          <h4>Absence Report</h4>
+          <p>Per employee: total absences, dates, max consecutive absences. Alerts at 3+ days.</p>
+          <span class="badge badge-xlsx">XLSX Export</span>
+        </div>
+        <div class="report-card fade-up fade-up-d5">
+          <div class="report-card-icon">&#x1F3E2;</div>
+          <h4>Site Comparison</h4>
+          <p>Cross-site: attendance rate %, avg hours, overtime, late count. Color-coded chart.</p>
+          <span class="badge badge-xlsx">XLSX Export</span>
+        </div>
+      </div>
+
+      <div class="sub-header" style="margin-top: 24px;">
+        <div class="section-label">HR Actions</div>
+        <h3>Corrective Actions With Full Audit Trail</h3>
+        <p>Every HR action is logged with old/new values, performer identity, reason, and timestamp. Complete accountability.</p>
+      </div>
+
+      <div class="hr-actions-grid">
+        <div class="hr-card correction fade-up"><div class="hr-card-icon">&#x270F;</div><h4>Attendance Correction</h4><p>Modify clock-in/out times and status. System auto-recomputes shift status, overtime. Old/new values logged.</p></div>
+        <div class="hr-card overtime fade-up fade-up-d1"><div class="hr-card-icon">&#x23F3;</div><h4>Overtime Approval</h4><p>Queue of pending overtime records. One-click approve or reject with optional reason.</p></div>
+        <div class="hr-card warning fade-up fade-up-d2"><div class="hr-card-icon">&#x26A0;</div><h4>Employee Warnings</h4><p>Three severity levels: verbal, written, final. Linked to specific employee.</p></div>
+        <div class="hr-card leave fade-up fade-up-d3"><div class="hr-card-icon">&#x1F3D6;</div><h4>Leave / Absence Marking</h4><p>Mark employees as on leave or absent for a date with a reason.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════ 8. NOTIFICATIONS ═══════ -->
+  <section class="notif-section" id="notifs">
+    <div class="container">
+      <div class="section-label">Notifications</div>
+      <h2 class="section-title">Proactive Alerts, Not Just Data</h2>
+      <p class="section-desc">The system doesn't wait for you to check &mdash; it tells you when something needs attention. In-app notifications with a bell icon and unread count.</p>
+
+      <div class="notif-grid">
+        <div class="notif-card geofence fade-up"><div class="notif-card-icon">&#x1F6A8;</div><div><h4>Geofence Violation</h4><p>Employee clocked in outside the allowed geofence radius.</p><div class="notif-to">&#x2192; HR Officers &amp; Admins</div></div></div>
+        <div class="notif-card late fade-up fade-up-d1"><div class="notif-card-icon">&#x23F0;</div><div><h4>Late Arrival</h4><p>Employee arrived past the shift start time + grace period.</p><div class="notif-to">&#x2192; Supervisors at Location</div></div></div>
+        <div class="notif-card summary fade-up fade-up-d2"><div class="notif-card-icon">&#x1F4CB;</div><div><h4>Daily Anomaly Summary</h4><p>Auto-generated: count of late arrivals, geofence violations, missing clock-outs.</p><div class="notif-to">&#x2192; HR Officers &amp; Admins</div></div></div>
+        <div class="notif-card sync fade-up fade-up-d3"><div class="notif-card-icon">&#x1F504;</div><div><h4>Sync Confirmation</h4><p>Offline clock-in/out records successfully synced to server.</p><div class="notif-to">&#x2192; Employee Who Synced</div></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════ 9. ARCHITECTURE ═══════ -->
+  <section class="arch-section" id="arch">
+    <div class="container">
+      <div class="section-label">Architecture</div>
+      <h2 class="section-title">System Architecture Overview</h2>
+      <p class="section-desc">How the pieces connect &mdash; from the employee's phone to the HR dashboard, whether online or offline.</p>
+
+      <div class="arch-diagram">
+        <!-- Client Layer -->
+        <div class="arch-layer">
+          <div class="arch-label">Clients</div>
+          <div class="arch-boxes">
+            <div class="arch-box client">Worker Phone<small>Clock In / Out</small></div>
+            <div class="arch-box client">Supervisor Tablet<small>Batch Check-In</small></div>
+            <div class="arch-box client">HR Desktop<small>Dashboard &amp; Reports</small></div>
+          </div>
+        </div>
+
+        <div class="arch-connector">
+          <div class="arch-connector-line"></div>
+          <div class="arch-connector-label">PWA &mdash; works online + offline</div>
+          <div class="arch-connector-line"></div>
+        </div>
+
+        <!-- Local Storage Layer -->
+        <div class="arch-layer">
+          <div class="arch-label">On Device</div>
+          <div class="arch-boxes">
+            <div class="arch-box local">Service Worker<small>Serwist / Cache</small></div>
+            <div class="arch-box local">IndexedDB<small>Sync Queue</small></div>
+            <div class="arch-box local">GPS API<small>Geolocation</small></div>
+          </div>
+        </div>
+
+        <div class="arch-connector">
+          <div class="arch-connector-line"></div>
+          <div class="arch-connector-label">HTTPS &mdash; syncs when online</div>
+          <div class="arch-connector-line"></div>
+        </div>
+
+        <!-- Server Layer -->
+        <div class="arch-layer">
+          <div class="arch-label">Server</div>
+          <div class="arch-boxes">
+            <div class="arch-box server">Next.js 16<small>Server Actions</small></div>
+            <div class="arch-box server">Vercel Edge<small>Global CDN</small></div>
+          </div>
+        </div>
+
+        <div class="arch-connector">
+          <div class="arch-connector-line"></div>
+          <div class="arch-connector-label">Supabase API + Realtime</div>
+          <div class="arch-connector-line"></div>
+        </div>
+
+        <!-- Database Layer -->
+        <div class="arch-layer">
+          <div class="arch-label">Database</div>
+          <div class="arch-boxes">
+            <div class="arch-box db">Postgres + RLS<small>Attendance Records</small></div>
+            <div class="arch-box db">Supabase Auth<small>Users &amp; Roles</small></div>
+            <div class="arch-box db">Realtime<small>Live Dashboard</small></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════ 10. SECURITY ═══════ -->
+  <section class="security-section" id="security">
+    <div class="container">
+      <div class="section-label">Security &amp; Data</div>
+      <h2 class="section-title">Enterprise-Grade Data Protection</h2>
+      <p class="section-desc">Every query goes through Row Level Security. Every action is audited. Every role boundary is enforced server-side.</p>
+
+      <div class="security-grid">
+        <div class="sec-card fade-up"><h4><div class="sec-icon">&#x1F512;</div> Row Level Security (RLS)</h4><p>Every database table has RLS policies. Employees only see their own data. Supervisors see their site. Enforced at the Postgres level.</p></div>
+        <div class="sec-card fade-up fade-up-d1"><h4><div class="sec-icon">&#x1F6E1;</div> Server-Side Auth</h4><p>All data mutations use Next.js Server Actions with Supabase server-side authentication. User identity derived from auth session.</p></div>
+        <div class="sec-card fade-up fade-up-d2"><h4><div class="sec-icon">&#x1F4DD;</div> Complete Audit Trail</h4><p>Every HR action is logged with: who, when, what changed, and why. Mandatory reason field for all corrections.</p></div>
+        <div class="sec-card fade-up fade-up-d3"><h4><div class="sec-icon">&#x1F310;</div> GPS Anti-Spoofing</h4><p>GPS readings validated for null-island detection, accuracy-zero spoofing, and unreliable readings (&gt;500m accuracy).</p></div>
+        <div class="sec-card fade-up fade-up-d4"><h4><div class="sec-icon">&#x2705;</div> Input Validation</h4><p>All inputs validated with Zod schemas on the server. No raw user input reaches the database.</p></div>
+        <div class="sec-card fade-up fade-up-d5"><h4><div class="sec-icon">&#x1F465;</div> Registration Approval</h4><p>New users can't access the system until an admin approves their registration.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════ 11. TECH STACK ═══════ -->
+  <section class="tech-section" id="tech">
+    <div class="container">
+      <div class="section-label">Technology</div>
+      <h2 class="section-title" style="color: var(--white);">Built With Modern, Reliable Tech</h2>
+      <p class="section-desc">Every technology chosen for a reason &mdash; performance, reliability, and cost-effectiveness.</p>
+
+      <div class="tech-grid">
+        <div class="tech-card fade-up"><div class="tech-card-icon">&#x25B2;</div><h4>Next.js 16</h4><p>React framework with server actions and app router</p></div>
+        <div class="tech-card fade-up fade-up-d1"><div class="tech-card-icon">&#x26A1;</div><h4>Supabase</h4><p>Postgres database with auth, RLS, and realtime</p></div>
+        <div class="tech-card fade-up fade-up-d2"><div class="tech-card-icon">&#x25B3;</div><h4>Vercel</h4><p>Global edge deployment with automatic SSL and CDN</p></div>
+        <div class="tech-card fade-up fade-up-d3"><div class="tech-card-icon">&#x1F5FA;</div><h4>Leaflet Maps</h4><p>Interactive maps with geofence visualization</p></div>
+        <div class="tech-card fade-up fade-up-d4"><div class="tech-card-icon">&#x1F4F1;</div><h4>PWA</h4><p>Installable app with service worker and offline support</p></div>
+        <div class="tech-card fade-up fade-up-d5"><div class="tech-card-icon">&#x1F4CA;</div><h4>Recharts</h4><p>Interactive charts for attendance analytics</p></div>
+        <div class="tech-card fade-up fade-up-d6"><div class="tech-card-icon">&#x1F4C4;</div><h4>Excel Export</h4><p>All reports exportable to .xlsx</p></div>
+        <div class="tech-card fade-up"><div class="tech-card-icon">&#x1F6E1;</div><h4>TypeScript</h4><p>Full type safety with Zod validation</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════
+       TESTING GUIDE
+       ═══════════════════════════════════════ -->
+  <section class="testing-section" id="testing">
+    <div class="container">
+      <div class="section-label">Testing Guide</div>
+      <h2 class="section-title" style="color: var(--white);">How to Test Before the Demo</h2>
+      <p class="section-desc">Create these test accounts, then walk through each scenario below. Each scenario maps to a real feature the client will see.</p>
+
+      <!-- Test Accounts -->
+      <div style="margin-bottom: 16px;">
+        <h3 style="color: var(--white); margin-bottom: 8px;">Step 1: Create Test Accounts</h3>
+        <p style="color: rgba(255,255,255,0.5); font-size: 0.88rem; margin-bottom: 20px;">
+          Sign up with these emails at <span class="mono" style="color: var(--amber);">/login</span>, then use the Admin account to approve and assign roles.
+        </p>
+      </div>
+
+      <table class="test-accounts">
+        <thead>
+          <tr>
+            <th>Email</th>
+            <th>Role</th>
+            <th>Password</th>
+            <th>Linked Employee</th>
+            <th>Location</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>admin@kunoz-test.com</td>
+            <td><span class="role-pill admin">Admin</span></td>
+            <td class="mono-cell">Test1234!</td>
+            <td>Omar Al-Zoubi (KNZ-005)</td>
+            <td>Head Office</td>
+          </tr>
+          <tr>
+            <td>hr@kunoz-test.com</td>
+            <td><span class="role-pill hr">HR Officer</span></td>
+            <td class="mono-cell">Test1234!</td>
+            <td>Noura Al-Otaibi (KNZ-002)</td>
+            <td>Head Office</td>
+          </tr>
+          <tr>
+            <td>supervisor@kunoz-test.com</td>
+            <td><span class="role-pill supervisor">Supervisor</span></td>
+            <td class="mono-cell">Test1234!</td>
+            <td>Mohammed Al-Rashidi (KNZ-007)</td>
+            <td>Factory 1 &mdash; Riyadh</td>
+          </tr>
+          <tr>
+            <td>worker@kunoz-test.com</td>
+            <td><span class="role-pill employee">Employee</span></td>
+            <td class="mono-cell">Test1234!</td>
+            <td>Ahmed Hassan (KNZ-009)</td>
+            <td>Factory 1 &mdash; Riyadh</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: var(--radius-sm); padding: 16px 20px; margin-bottom: 56px; font-size: 0.85rem; color: rgba(255,255,255,0.5); line-height: 1.6;">
+        <strong style="color: var(--amber);">Setup order:</strong> Register admin first &rarr; approve themselves via Supabase dashboard &rarr; set role to <span class="mono">admin</span> &rarr; register other accounts &rarr; approve &amp; assign roles from within the app at <span class="mono" style="color: rgba(255,255,255,0.7);">/admin/users</span>. Link each account to the matching employee record.
+      </div>
+
+      <!-- Test Scenarios -->
+      <h3 style="color: var(--white); margin-bottom: 24px;">Step 2: Walk Through Each Scenario</h3>
+
+      <div class="scenario-grid">
+        <!-- Scenario 1 -->
+        <div class="scenario-card fade-up">
+          <div class="scenario-header">
+            <div class="scenario-num">1</div>
+            <h4>Registration &amp; Approval Flow</h4>
+            <span class="scenario-role">Admin</span>
+          </div>
+          <div class="scenario-body">
+            <ol class="scenario-steps">
+              <li>Open app in incognito &rarr; go to <strong>/login</strong></li>
+              <li>Click <strong>"Create account"</strong> &rarr; sign up with a new email</li>
+              <li>Check email &rarr; verify the link works</li>
+              <li>Log in &rarr; you should see the <strong>"Pending Approval"</strong> page</li>
+              <li>Log in as <strong>Admin</strong> &rarr; go to <strong>/admin/users</strong></li>
+              <li><strong>Approve</strong> the new user and assign a role</li>
+              <li>Log back in as the new user &rarr; they should see the dashboard</li>
+            </ol>
+            <div class="scenario-expect">
+              <strong>Expected:</strong> Unapproved users are blocked. Approved users see role-appropriate dashboard.
+            </div>
+          </div>
+        </div>
+
+        <!-- Scenario 2 -->
+        <div class="scenario-card fade-up fade-up-d1">
+          <div class="scenario-header">
+            <div class="scenario-num">2</div>
+            <h4>Employee Clock-In (Online)</h4>
+            <span class="scenario-role">Employee</span>
+          </div>
+          <div class="scenario-body">
+            <ol class="scenario-steps">
+              <li>Log in as <strong>worker@kunoz-test.com</strong></li>
+              <li>Go to <strong>/dashboard/attendance</strong></li>
+              <li>Allow GPS permission when prompted</li>
+              <li>Tap the <strong>"Clock In"</strong> button</li>
+              <li>Verify the success message shows <strong>location name + time</strong></li>
+              <li>Check that attendance status shows <strong>"Present"</strong> or <strong>"Late"</strong></li>
+              <li>Wait, then tap <strong>"Clock Out"</strong></li>
+            </ol>
+            <div class="scenario-expect">
+              <strong>Expected:</strong> Record created with GPS coords. Status auto-computed against shift time. History updated.
+            </div>
+          </div>
+        </div>
+
+        <!-- Scenario 3 -->
+        <div class="scenario-card fade-up fade-up-d2">
+          <div class="scenario-header">
+            <div class="scenario-num">3</div>
+            <h4>Offline Clock-In &amp; Sync</h4>
+            <span class="scenario-role">Employee</span>
+          </div>
+          <div class="scenario-body">
+            <ol class="scenario-steps">
+              <li>Log in as employee &rarr; load the attendance page</li>
+              <li>Open <strong>DevTools &rarr; Network &rarr; toggle Offline</strong></li>
+              <li>Verify the <strong>offline indicator</strong> appears (red dot / banner)</li>
+              <li>Tap <strong>"Clock In"</strong> &mdash; should still succeed</li>
+              <li>Check the <strong>pending sync counter</strong> in the UI</li>
+              <li>Re-enable network &rarr; watch for <strong>auto-sync</strong></li>
+              <li>Verify the record appears on the server (check HR dashboard)</li>
+            </ol>
+            <div class="scenario-expect">
+              <strong>Expected:</strong> Clock-in succeeds offline. Pending count shows. Auto-syncs when online. Record appears in HR view.
+            </div>
+          </div>
+        </div>
+
+        <!-- Scenario 4 -->
+        <div class="scenario-card fade-up fade-up-d3">
+          <div class="scenario-header">
+            <div class="scenario-num">4</div>
+            <h4>Supervisor Batch Clock-In</h4>
+            <span class="scenario-role">Supervisor</span>
+          </div>
+          <div class="scenario-body">
+            <ol class="scenario-steps">
+              <li>Log in as <strong>supervisor@kunoz-test.com</strong></li>
+              <li>Go to <strong>/dashboard/bulk-checkin</strong></li>
+              <li>Select <strong>3+ employees</strong> from the crew list</li>
+              <li>Tap <strong>"Clock In Selected"</strong></li>
+              <li>Verify each employee gets a <strong>separate attendance record</strong></li>
+              <li>Check records show method = <strong>supervisor_batch</strong></li>
+              <li>Verify late/on-time status is <strong>computed per employee's shift</strong></li>
+            </ol>
+            <div class="scenario-expect">
+              <strong>Expected:</strong> N records created in one action. Supervisor's GPS used. Method tagged for audit.
+            </div>
+          </div>
+        </div>
+
+        <!-- Scenario 5 -->
+        <div class="scenario-card fade-up fade-up-d4">
+          <div class="scenario-header">
+            <div class="scenario-num">5</div>
+            <h4>Site Attendance Dashboard</h4>
+            <span class="scenario-role">Supervisor</span>
+          </div>
+          <div class="scenario-body">
+            <ol class="scenario-steps">
+              <li>Log in as supervisor &rarr; go to <strong>/dashboard/site-attendance</strong></li>
+              <li>Verify you see <strong>only your site's employees</strong></li>
+              <li>Check the <strong>present / absent / late counts</strong> are correct</li>
+              <li>Add a <strong>note</strong> to an attendance record</li>
+              <li>In another browser, clock in as an employee at the same site</li>
+              <li>Check if the dashboard <strong>updates</strong> (may need refresh)</li>
+            </ol>
+            <div class="scenario-expect">
+              <strong>Expected:</strong> Scoped to site only. Counts accurate. Notes saved. New check-ins reflected.
+            </div>
+          </div>
+        </div>
+
+        <!-- Scenario 6 -->
+        <div class="scenario-card fade-up fade-up-d5">
+          <div class="scenario-header">
+            <div class="scenario-num">6</div>
+            <h4>HR Reports &amp; Excel Export</h4>
+            <span class="scenario-role">HR / Admin</span>
+          </div>
+          <div class="scenario-body">
+            <ol class="scenario-steps">
+              <li>Log in as <strong>hr@kunoz-test.com</strong> (or admin)</li>
+              <li>Go to <strong>/dashboard/reports</strong></li>
+              <li>Select <strong>"Daily Attendance"</strong> report &rarr; pick today's date</li>
+              <li>Verify data shows for <strong>all sites</strong></li>
+              <li>Click <strong>"Export to Excel"</strong> &rarr; download the .xlsx file</li>
+              <li>Open in Excel &rarr; check columns match the on-screen data</li>
+              <li>Test at least <strong>3 different report types</strong></li>
+            </ol>
+            <div class="scenario-expect">
+              <strong>Expected:</strong> Reports show correct data. Excel files download and open correctly with proper formatting.
+            </div>
+          </div>
+        </div>
+
+        <!-- Scenario 7 -->
+        <div class="scenario-card fade-up">
+          <div class="scenario-header">
+            <div class="scenario-num">7</div>
+            <h4>HR Corrective Actions</h4>
+            <span class="scenario-role">HR / Admin</span>
+          </div>
+          <div class="scenario-body">
+            <ol class="scenario-steps">
+              <li>Go to <strong>/dashboard/hr-actions</strong></li>
+              <li><strong>Correct</strong> an attendance record &rarr; change clock-in time</li>
+              <li>Check the <strong>audit log</strong> shows old/new values + your name</li>
+              <li><strong>Approve</strong> an overtime entry</li>
+              <li><strong>Issue a warning</strong> to an employee</li>
+              <li><strong>Mark an employee</strong> as on leave for today</li>
+            </ol>
+            <div class="scenario-expect">
+              <strong>Expected:</strong> All actions succeed. Audit trail complete. Status re-computed after corrections.
+            </div>
+          </div>
+        </div>
+
+        <!-- Scenario 8 -->
+        <div class="scenario-card fade-up fade-up-d1">
+          <div class="scenario-header">
+            <div class="scenario-num">8</div>
+            <h4>Location &amp; Employee Management</h4>
+            <span class="scenario-role">Admin</span>
+          </div>
+          <div class="scenario-body">
+            <ol class="scenario-steps">
+              <li>Go to <strong>/dashboard/locations</strong></li>
+              <li>Verify all <strong>8 sites</strong> are listed with correct cities</li>
+              <li>Click a location &rarr; check the <strong>map and geofence circle</strong></li>
+              <li>Go to <strong>/dashboard/employees</strong></li>
+              <li>Verify <strong>70 employees</strong> are listed</li>
+              <li>Use <strong>filters</strong>: by location, by status (active/inactive)</li>
+              <li>Click an employee &rarr; check their <strong>profile &amp; attendance history</strong></li>
+            </ol>
+            <div class="scenario-expect">
+              <strong>Expected:</strong> All seeded data present. Maps load. Filters work. Employee profiles show history.
+            </div>
+          </div>
+        </div>
+
+        <!-- Scenario 9 -->
+        <div class="scenario-card fade-up fade-up-d2">
+          <div class="scenario-header">
+            <div class="scenario-num">9</div>
+            <h4>Shift Management</h4>
+            <span class="scenario-role">Admin / HR</span>
+          </div>
+          <div class="scenario-body">
+            <ol class="scenario-steps">
+              <li>Go to <strong>/dashboard/shifts</strong></li>
+              <li><strong>Create</strong> a new shift: "Day Shift" 07:00&ndash;17:00, 15 min grace</li>
+              <li><strong>Assign</strong> the shift to Factory 1 &mdash; Riyadh</li>
+              <li>Clock in an employee at that location <strong>after 07:15</strong></li>
+              <li>Verify the record is marked as <strong>"Late"</strong></li>
+              <li>Clock in <strong>before 07:15</strong> &rarr; verify marked as <strong>"Present"</strong></li>
+            </ol>
+            <div class="scenario-expect">
+              <strong>Expected:</strong> Shift rules enforced. Grace period respected. Late/present computed correctly.
+            </div>
+          </div>
+        </div>
+
+        <!-- Scenario 10 -->
+        <div class="scenario-card fade-up fade-up-d3">
+          <div class="scenario-header">
+            <div class="scenario-num">10</div>
+            <h4>PWA Install &amp; Mobile Test</h4>
+            <span class="scenario-role">Any Role</span>
+          </div>
+          <div class="scenario-body">
+            <ol class="scenario-steps">
+              <li>Open the app on a <strong>mobile phone</strong> (Chrome or Safari)</li>
+              <li>Check for <strong>"Add to Home Screen"</strong> prompt or install banner</li>
+              <li>Install the PWA &rarr; open from home screen</li>
+              <li>Verify it launches in <strong>standalone mode</strong> (no browser bar)</li>
+              <li>Navigate between pages &rarr; check <strong>bottom navigation works</strong></li>
+              <li>Toggle airplane mode &rarr; verify <strong>cached pages still load</strong></li>
+            </ol>
+            <div class="scenario-expect">
+              <strong>Expected:</strong> Installs as app. Standalone mode. Pages cached. Navigation works offline.
+            </div>
+          </div>
+        </div>
+
+        <!-- Scenario 11 -->
+        <div class="scenario-card fade-up fade-up-d4">
+          <div class="scenario-header">
+            <div class="scenario-num">11</div>
+            <h4>Role-Based Access Verification</h4>
+            <span class="scenario-role">All Roles</span>
+          </div>
+          <div class="scenario-body">
+            <ol class="scenario-steps">
+              <li>As <strong>Employee</strong>: try to access <strong>/admin/users</strong> &rarr; should redirect</li>
+              <li>As <strong>Employee</strong>: verify <strong>no sidebar links</strong> to admin pages</li>
+              <li>As <strong>Supervisor</strong>: verify <strong>no access</strong> to HR actions or admin</li>
+              <li>As <strong>HR</strong>: verify access to reports but <strong>not admin/users</strong></li>
+              <li>As <strong>Admin</strong>: verify <strong>full access</strong> to everything</li>
+            </ol>
+            <div class="scenario-expect">
+              <strong>Expected:</strong> Each role only sees their allowed pages. Direct URL access redirects unauthorized users.
+            </div>
+          </div>
+        </div>
+
+        <!-- Scenario 12 -->
+        <div class="scenario-card fade-up fade-up-d5">
+          <div class="scenario-header">
+            <div class="scenario-num">12</div>
+            <h4>Geofence Violation Test</h4>
+            <span class="scenario-role">Employee + HR</span>
+          </div>
+          <div class="scenario-body">
+            <ol class="scenario-steps">
+              <li>In Chrome DevTools: <strong>Sensors tab &rarr; set custom GPS</strong></li>
+              <li>Set coordinates <strong>far from any Kunoz site</strong> (e.g., 0, 0)</li>
+              <li>Log in as employee &rarr; tap <strong>"Clock In"</strong></li>
+              <li>Check if a <strong>warning is shown</strong> (outside geofence)</li>
+              <li>Log in as HR &rarr; check for <strong>geofence violation notification</strong></li>
+              <li>Check that the record is <strong>flagged but not blocked</strong></li>
+            </ol>
+            <div class="scenario-expect">
+              <strong>Expected:</strong> Clock-in succeeds but flagged. HR notified. Record shows GPS mismatch.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════════════════════════
+       TESTING CHECKLIST
+       ═══════════════════════════════════════ -->
+  <section class="checklist-section" id="checklist">
+    <div class="container">
+      <div class="section-label">Pre-Demo Checklist</div>
+      <h2 class="section-title">Final QA Before Showing to Kunoz</h2>
+      <p class="section-desc">Check off each item as you verify it. Print this page or use it on a tablet during the walkthrough. Checkboxes are interactive.</p>
+
+      <div class="checklist-grid">
+        <!-- Auth & Access -->
+        <div class="checklist-group">
+          <div class="checklist-group-header">
+            <div class="checklist-group-icon" style="background: var(--teal-light); color: var(--teal);">&#x1F512;</div>
+            <h4>Auth &amp; Access</h4>
+            <span class="count">7 items</span>
+          </div>
+          <div class="check-item"><input type="checkbox" id="c1"><label for="c1">Sign up with email works</label></div>
+          <div class="check-item"><input type="checkbox" id="c2"><label for="c2">Email verification link arrives</label></div>
+          <div class="check-item"><input type="checkbox" id="c3"><label for="c3">Pending approval page shown for unapproved users</label></div>
+          <div class="check-item"><input type="checkbox" id="c4"><label for="c4">Admin can approve/reject from /admin/users</label></div>
+          <div class="check-item"><input type="checkbox" id="c5"><label for="c5">Role assignment works (admin, hr, supervisor, employee)</label></div>
+          <div class="check-item"><input type="checkbox" id="c6"><label for="c6">Password reset via email works</label></div>
+          <div class="check-item"><input type="checkbox" id="c7"><label for="c7">Logout works from all pages</label></div>
+        </div>
+
+        <!-- Attendance -->
+        <div class="checklist-group">
+          <div class="checklist-group-header">
+            <div class="checklist-group-icon" style="background: var(--emerald-light); color: var(--emerald);">&#x1F4CD;</div>
+            <h4>Attendance</h4>
+            <span class="count">8 items</span>
+          </div>
+          <div class="check-item"><input type="checkbox" id="c8"><label for="c8">Employee can clock in with GPS</label></div>
+          <div class="check-item"><input type="checkbox" id="c9"><label for="c9">Employee can clock out</label></div>
+          <div class="check-item"><input type="checkbox" id="c10"><label for="c10">Attendance history shows correct records</label></div>
+          <div class="check-item"><input type="checkbox" id="c11"><label for="c11">Late status auto-detected against shift</label></div>
+          <div class="check-item"><input type="checkbox" id="c12"><label for="c12">Supervisor batch clock-in creates N records</label></div>
+          <div class="check-item"><input type="checkbox" id="c13"><label for="c13">Site attendance page shows correct counts</label></div>
+          <div class="check-item"><input type="checkbox" id="c14"><label for="c14">Attendance notes can be added</label></div>
+          <div class="check-item"><input type="checkbox" id="c15"><label for="c15">Geofence violation is flagged (not blocked)</label></div>
+        </div>
+
+        <!-- Offline -->
+        <div class="checklist-group">
+          <div class="checklist-group-header">
+            <div class="checklist-group-icon" style="background: var(--amber-light); color: var(--amber);">&#x1F4E1;</div>
+            <h4>Offline &amp; PWA</h4>
+            <span class="count">6 items</span>
+          </div>
+          <div class="check-item"><input type="checkbox" id="c16"><label for="c16">Offline indicator appears when disconnected</label></div>
+          <div class="check-item"><input type="checkbox" id="c17"><label for="c17">Clock-in works while offline</label></div>
+          <div class="check-item"><input type="checkbox" id="c18"><label for="c18">Pending sync count visible in UI</label></div>
+          <div class="check-item"><input type="checkbox" id="c19"><label for="c19">Records auto-sync when back online</label></div>
+          <div class="check-item"><input type="checkbox" id="c20"><label for="c20">PWA installs on mobile (Add to Home Screen)</label></div>
+          <div class="check-item"><input type="checkbox" id="c21"><label for="c21">Cached pages load in airplane mode</label></div>
+        </div>
+
+        <!-- Shifts -->
+        <div class="checklist-group">
+          <div class="checklist-group-header">
+            <div class="checklist-group-icon" style="background: var(--purple-light); color: var(--purple);">&#x23F0;</div>
+            <h4>Shifts</h4>
+            <span class="count">5 items</span>
+          </div>
+          <div class="check-item"><input type="checkbox" id="c22"><label for="c22">Can create shift templates</label></div>
+          <div class="check-item"><input type="checkbox" id="c23"><label for="c23">Can assign shifts to locations</label></div>
+          <div class="check-item"><input type="checkbox" id="c24"><label for="c24">Grace period respected (on-time within grace)</label></div>
+          <div class="check-item"><input type="checkbox" id="c25"><label for="c25">Late detection works (after grace period)</label></div>
+          <div class="check-item"><input type="checkbox" id="c26"><label for="c26">Overtime detected when hours exceed shift</label></div>
+        </div>
+
+        <!-- Reports -->
+        <div class="checklist-group">
+          <div class="checklist-group-header">
+            <div class="checklist-group-icon" style="background: var(--blue-light); color: var(--blue);">&#x1F4CA;</div>
+            <h4>Reports &amp; Exports</h4>
+            <span class="count">5 items</span>
+          </div>
+          <div class="check-item"><input type="checkbox" id="c27"><label for="c27">Daily attendance report loads with data</label></div>
+          <div class="check-item"><input type="checkbox" id="c28"><label for="c28">Excel export downloads correctly</label></div>
+          <div class="check-item"><input type="checkbox" id="c29"><label for="c29">Site comparison chart renders</label></div>
+          <div class="check-item"><input type="checkbox" id="c30"><label for="c30">Attendance trend chart shows data</label></div>
+          <div class="check-item"><input type="checkbox" id="c31"><label for="c31">Report filters work (date, site, employee)</label></div>
+        </div>
+
+        <!-- HR Actions -->
+        <div class="checklist-group">
+          <div class="checklist-group-header">
+            <div class="checklist-group-icon" style="background: var(--red-light); color: var(--red);">&#x270F;</div>
+            <h4>HR Actions</h4>
+            <span class="count">5 items</span>
+          </div>
+          <div class="check-item"><input type="checkbox" id="c32"><label for="c32">Attendance correction saves with audit log</label></div>
+          <div class="check-item"><input type="checkbox" id="c33"><label for="c33">Overtime approval/rejection works</label></div>
+          <div class="check-item"><input type="checkbox" id="c34"><label for="c34">Employee warning can be issued</label></div>
+          <div class="check-item"><input type="checkbox" id="c35"><label for="c35">Leave marking updates attendance status</label></div>
+          <div class="check-item"><input type="checkbox" id="c36"><label for="c36">Audit log shows all actions with timestamps</label></div>
+        </div>
+
+        <!-- Data & Locations -->
+        <div class="checklist-group">
+          <div class="checklist-group-header">
+            <div class="checklist-group-icon" style="background: var(--teal-light); color: var(--teal);">&#x1F5FA;</div>
+            <h4>Data &amp; Locations</h4>
+            <span class="count">5 items</span>
+          </div>
+          <div class="check-item"><input type="checkbox" id="c37"><label for="c37">All 8 locations visible with correct cities</label></div>
+          <div class="check-item"><input type="checkbox" id="c38"><label for="c38">Maps load with geofence circles</label></div>
+          <div class="check-item"><input type="checkbox" id="c39"><label for="c39">70 employees visible in employee list</label></div>
+          <div class="check-item"><input type="checkbox" id="c40"><label for="c40">Employee filters work (location, status)</label></div>
+          <div class="check-item"><input type="checkbox" id="c41"><label for="c41">Employee profile page loads with details</label></div>
+        </div>
+
+        <!-- UI & Polish -->
+        <div class="checklist-group">
+          <div class="checklist-group-header">
+            <div class="checklist-group-icon" style="background: var(--amber-light); color: var(--amber);">&#x2728;</div>
+            <h4>UI &amp; Polish</h4>
+            <span class="count">6 items</span>
+          </div>
+          <div class="check-item"><input type="checkbox" id="c42"><label for="c42">Mobile layout looks good on phone</label></div>
+          <div class="check-item"><input type="checkbox" id="c43"><label for="c43">Desktop layout uses full width</label></div>
+          <div class="check-item"><input type="checkbox" id="c44"><label for="c44">Loading skeletons show (not blank screens)</label></div>
+          <div class="check-item"><input type="checkbox" id="c45"><label for="c45">Notifications bell works with unread count</label></div>
+          <div class="check-item"><input type="checkbox" id="c46"><label for="c46">No console errors on any page</label></div>
+          <div class="check-item"><input type="checkbox" id="c47"><label for="c47">Page transitions are smooth (no flash of content)</label></div>
+        </div>
+      </div>
+
+      <!-- Progress counter -->
+      <div style="margin-top: 40px; text-align: center; padding: 24px; background: var(--slate-100); border-radius: var(--radius); border: 1px solid var(--slate-200);">
+        <div style="font-size: 0.85rem; color: var(--slate-400); margin-bottom: 8px;">Testing Progress</div>
+        <div id="progress-display" style="font-family: 'Plus Jakarta Sans', sans-serif; font-size: 2rem; font-weight: 800; color: var(--teal);">
+          0 / 47
+        </div>
+        <div id="progress-bar" style="margin-top: 12px; height: 6px; background: var(--slate-200); border-radius: 3px; overflow: hidden;">
+          <div id="progress-fill" style="height: 100%; width: 0%; background: var(--emerald); border-radius: 3px; transition: width 0.3s ease;"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════ FOOTER ═══════ -->
+  <footer class="footer">
+    <strong>Kunoz</strong> &mdash; Workforce Attendance System v1.0<br />
+    8 Locations &middot; 70 Employees &middot; Offline-First &middot; GPS-Verified<br />
+    <span style="margin-top: 8px; display: inline-block;">Built by <strong>Qualia Solutions</strong></span>
+  </footer>
+
+  <!-- Checklist progress tracker -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const checkboxes = document.querySelectorAll('.check-item input[type="checkbox"]');
+      const total = checkboxes.length;
+      const display = document.getElementById('progress-display');
+      const fill = document.getElementById('progress-fill');
+
+      function updateProgress() {
+        const checked = document.querySelectorAll('.check-item input[type="checkbox"]:checked').length;
+        display.textContent = checked + ' / ' + total;
+        fill.style.width = (checked / total * 100) + '%';
+        if (checked === total) {
+          display.style.color = '#059669';
+          display.textContent = checked + ' / ' + total + ' — Ready for Demo!';
+        } else {
+          display.style.color = '#0D7377';
+        }
+      }
+
+      checkboxes.forEach(function(cb) {
+        cb.addEventListener('change', updateProgress);
+      });
+    });
+  </script>
+
+</body>
+</html>

@@ -2,16 +2,16 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireRole } from "@/lib/auth/dal";
+import { requireAuth, requireRole } from "@/lib/auth/dal";
 import { revalidatePath } from "next/cache";
 import {
   employeeSchema,
   type EmployeeFormData,
   type EmployeeFilters,
 } from "@/lib/validations/employee";
-import type { AppRole } from "@/lib/auth/types";
-
-const VALID_ROLES: AppRole[] = ["admin", "hr_officer", "supervisor", "employee"];
+import { VALID_ROLES, type AppRole } from "@/lib/auth/types";
+import { handleActionError } from "@/lib/errors";
+import { logger } from "@/lib/logger";
 
 export async function createEmployeeAction(data: EmployeeFormData) {
   await requireRole("admin", "hr_officer");
@@ -34,7 +34,9 @@ export async function createEmployeeAction(data: EmployeeFormData) {
     is_active: parsed.data.is_active,
   });
 
-  if (error) throw new Error(error.message);
+  if (error) handleActionError(error, "createEmployeeAction", { employeeNumber: parsed.data.employee_number });
+
+  logger.info("createEmployeeAction", "Employee created", { employeeNumber: parsed.data.employee_number });
   revalidatePath("/dashboard/employees");
 }
 
@@ -67,7 +69,7 @@ export async function updateEmployeeAction(
     })
     .eq("id", id);
 
-  if (error) throw new Error(error.message);
+  if (error) handleActionError(error, "updateEmployeeAction", { employeeId: id });
 
   // If employee has linked profile and role change requested, update profiles.role
   if (data.role && VALID_ROLES.includes(data.role) && parsed.data.profile_id) {
@@ -77,9 +79,10 @@ export async function updateEmployeeAction(
       .update({ role: data.role })
       .eq("id", parsed.data.profile_id);
 
-    if (roleError) throw new Error(roleError.message);
+    if (roleError) handleActionError(roleError, "updateEmployeeAction", { profileId: parsed.data.profile_id, role: data.role });
   }
 
+  logger.info("updateEmployeeAction", "Employee updated", { employeeId: id });
   revalidatePath("/dashboard/employees");
 }
 
@@ -97,14 +100,16 @@ export async function toggleEmployeeActiveAction(id: string) {
     .eq("id", id)
     .single();
 
-  if (fetchError) throw new Error(fetchError.message);
+  if (fetchError) handleActionError(fetchError, "toggleEmployeeActiveAction", { employeeId: id });
 
   const { error } = await supabase
     .from("employees")
     .update({ is_active: !employee.is_active })
     .eq("id", id);
 
-  if (error) throw new Error(error.message);
+  if (error) handleActionError(error, "toggleEmployeeActiveAction", { employeeId: id });
+
+  logger.info("toggleEmployeeActiveAction", `Employee ${employee.is_active ? "deactivated" : "activated"}`, { employeeId: id });
   revalidatePath("/dashboard/employees");
 }
 
@@ -123,7 +128,9 @@ export async function assignEmployeeLocationAction(
     .update({ primary_location_id: locationId })
     .eq("id", id);
 
-  if (error) throw new Error(error.message);
+  if (error) handleActionError(error, "assignEmployeeLocationAction", { employeeId: id, locationId });
+
+  logger.info("assignEmployeeLocationAction", "Employee location assigned", { employeeId: id, locationId });
   revalidatePath("/dashboard/employees");
 }
 
@@ -142,11 +149,14 @@ export async function linkEmployeeProfileAction(
     .update({ profile_id: profileId })
     .eq("id", employeeId);
 
-  if (error) throw new Error(error.message);
+  if (error) handleActionError(error, "linkEmployeeProfileAction", { employeeId, profileId });
+
+  logger.info("linkEmployeeProfileAction", "Employee profile linked", { employeeId, profileId });
   revalidatePath("/dashboard/employees");
 }
 
 export async function getEmployeesAction(filters?: EmployeeFilters) {
+  await requireAuth();
   const supabase = await createClient();
 
   let query = supabase
@@ -164,18 +174,23 @@ export async function getEmployeesAction(filters?: EmployeeFilters) {
     query = query.eq("is_active", filters.isActive);
   }
   if (filters?.search) {
-    query = query.or(
-      `full_name.ilike.%${filters.search}%,employee_number.ilike.%${filters.search}%`
-    );
+    // Sanitize search input to prevent PostgREST filter injection
+    const sanitized = filters.search.replace(/[%_.,()]/g, "");
+    if (sanitized.length > 0) {
+      query = query.or(
+        `full_name.ilike.%${sanitized}%,employee_number.ilike.%${sanitized}%`
+      );
+    }
   }
 
   const { data, error } = await query;
 
-  if (error) throw new Error(error.message);
+  if (error) handleActionError(error, "getEmployeesAction");
   return data;
 }
 
 export async function getEmployeeAction(id: string) {
+  await requireAuth();
   const supabase = await createClient();
 
   const { data, error } = await supabase
@@ -184,7 +199,7 @@ export async function getEmployeeAction(id: string) {
     .eq("id", id)
     .single();
 
-  if (error) throw new Error(error.message);
+  if (error) handleActionError(error, "getEmployeeAction", { employeeId: id });
 
   // If linked to a profile, fetch profile info
   let profile = null;

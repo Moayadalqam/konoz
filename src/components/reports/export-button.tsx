@@ -18,31 +18,45 @@ export function ExportButton({ data, columns, filename }: ExportButtonProps) {
     setExporting(true);
 
     try {
-      const XLSX = await import("xlsx");
+      const ExcelJS = await import("exceljs");
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Report");
 
-      // Build rows with column headers
-      const rows = data.map((row) => {
-        const mapped: Record<string, unknown> = {};
-        for (const col of columns) {
-          mapped[col.header] = row[col.key] ?? "";
-        }
-        return mapped;
-      });
-
-      const worksheet = XLSX.utils.json_to_sheet(rows);
-
-      // Auto-size columns based on header length
-      worksheet["!cols"] = columns.map((col) => ({
-        wch: Math.max(col.header.length + 2, 14),
+      // Add header row
+      worksheet.columns = columns.map((col) => ({
+        header: col.header,
+        key: col.key,
+        width: Math.max(col.header.length + 4, 16),
       }));
 
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, "Report");
+      // Style header row
+      const headerRow = worksheet.getRow(1);
+      headerRow.font = { bold: true };
+      headerRow.alignment = { horizontal: "center" };
 
+      // Add data rows
+      for (const row of data) {
+        const mapped: Record<string, unknown> = {};
+        for (const col of columns) {
+          mapped[col.key] = row[col.key] ?? "";
+        }
+        worksheet.addRow(mapped);
+      }
+
+      // Generate and download
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
       const dateStamp = new Date().toISOString().slice(0, 10);
-      XLSX.writeFile(workbook, `${filename}-${dateStamp}.xlsx`);
+      a.href = url;
+      a.download = `${filename}-${dateStamp}.xlsx`;
+      a.click();
+      URL.revokeObjectURL(url);
     } catch {
-      // xlsx import failed or export error - silently handle
+      // exceljs import failed or export error
     } finally {
       setExporting(false);
     }

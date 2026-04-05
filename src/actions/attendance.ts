@@ -3,6 +3,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { requireAuth } from "@/lib/auth/dal";
 import { revalidatePath } from "next/cache";
+import { getTodayStart } from "@/lib/date-utils";
 import {
   clockInSchema,
   clockOutSchema,
@@ -13,30 +14,14 @@ import {
 } from "@/lib/validations/attendance";
 import { isWithinGeofence, validateGpsReading } from "@/lib/geo/geofence";
 import { computeShiftStatus } from "@/lib/shifts/time-rules";
+import { resolveEmployeeShift } from "@/lib/shifts/resolve";
 import type { Shift } from "@/lib/validations/shift";
 import {
   notifyGeofenceViolation,
   notifyLateArrival,
 } from "@/lib/notifications/create";
-
-async function resolveEmployeeShift(
-  supabase: Awaited<ReturnType<typeof createClient>>,
-  employeeId: string
-): Promise<Shift | null> {
-  const { data: result } = await supabase.rpc("get_employee_shift", {
-    p_employee_id: employeeId,
-  });
-
-  if (!result) return null;
-
-  const { data: shift } = await supabase
-    .from("shifts")
-    .select("*")
-    .eq("id", result)
-    .single();
-
-  return shift as Shift | null;
-}
+import { handleActionError } from "@/lib/errors";
+import { logger } from "@/lib/logger";
 
 export async function clockInAction(data: ClockInInput) {
   const profile = await requireAuth();
@@ -63,29 +48,31 @@ export async function clockInAction(data: ClockInInput) {
     throw new Error("You are not assigned to any location");
   }
 
-  // Get assigned location for geofence check
-  const { data: location, error: locError } = await supabase
-    .from("locations")
-    .select("id, name, latitude, longitude, geofence_radius_meters")
-    .eq("id", employee.primary_location_id)
-    .single();
+  // Parallelize independent queries: location + existing check + shift resolution
+  const todayStart = getTodayStart();
 
+  const [locationResult, existingResult, shift] = await Promise.all([
+    supabase
+      .from("locations")
+      .select("id, name, latitude, longitude, geofence_radius_meters")
+      .eq("id", employee.primary_location_id)
+      .single(),
+    supabase
+      .from("attendance_records")
+      .select("id, clock_out")
+      .eq("employee_id", employee.id)
+      .gte("clock_in", todayStart.toISOString())
+      .is("clock_out", null)
+      .limit(1),
+    resolveEmployeeShift(supabase, employee.id, employee.primary_location_id),
+  ]);
+
+  const { data: location, error: locError } = locationResult;
   if (locError || !location) {
     throw new Error("Assigned location not found");
   }
 
-  // Check for existing open clock-in today
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-
-  const { data: existing } = await supabase
-    .from("attendance_records")
-    .select("id, clock_out")
-    .eq("employee_id", employee.id)
-    .gte("clock_in", todayStart.toISOString())
-    .is("clock_out", null)
-    .limit(1);
-
+  const { data: existing } = existingResult;
   if (existing && existing.length > 0) {
     throw new Error("You are already clocked in. Please clock out first.");
   }
@@ -107,9 +94,6 @@ export async function clockInAction(data: ClockInInput) {
   );
 
   const now = new Date().toISOString();
-
-  // Resolve shift for late-arrival detection
-  const shift = await resolveEmployeeShift(supabase, employee.id);
   let shiftId: string | null = null;
   let status: string = "present";
 
@@ -147,7 +131,9 @@ export async function clockInAction(data: ClockInInput) {
     .select("id")
     .single();
 
-  if (insertError) throw new Error(insertError.message);
+  if (insertError) handleActionError(insertError, "clockInAction", { employeeId: employee.id, locationId: location.id });
+
+  logger.info("clockInAction", "Employee clocked in", { employeeId: employee.id, locationId: location.id, withinGeofence, status });
 
   const attendanceId = insertedRecord?.id ?? "";
 
@@ -232,12 +218,24 @@ export async function clockOutAction(data: ClockOutInput) {
     throw new Error("No open clock-in record found");
   }
 
-  // Get location for geofence check
-  const { data: location } = await supabase
-    .from("locations")
-    .select("latitude, longitude, geofence_radius_meters, name")
-    .eq("id", record.location_id)
-    .single();
+  // Parallelize location + shift lookups (both depend on record, not each other)
+  const [locationResult, shiftResult] = await Promise.all([
+    supabase
+      .from("locations")
+      .select("latitude, longitude, geofence_radius_meters, name")
+      .eq("id", record.location_id)
+      .single(),
+    record.shift_id
+      ? supabase
+          .from("shifts")
+          .select("*")
+          .eq("id", record.shift_id)
+          .single()
+      : Promise.resolve({ data: null }),
+  ]);
+
+  const location = locationResult.data;
+  const shift = shiftResult.data as Shift | null;
 
   const withinGeofence = location
     ? isWithinGeofence(
@@ -260,24 +258,16 @@ export async function clockOutAction(data: ClockOutInput) {
   let isOvertime = false;
   let overtimeMinutes = 0;
 
-  if (record.shift_id) {
-    const { data: shift } = await supabase
-      .from("shifts")
-      .select("*")
-      .eq("id", record.shift_id)
-      .single();
-
-    if (shift) {
-      const shiftResult = computeShiftStatus({
-        shift: shift as Shift,
-        clockIn: clockInTime,
-        clockOut: now,
-      });
-      if (shiftResult) {
-        status = shiftResult.status;
-        isOvertime = shiftResult.isOvertime;
-        overtimeMinutes = shiftResult.overtimeMinutes;
-      }
+  if (shift) {
+    const shiftStatusResult = computeShiftStatus({
+      shift,
+      clockIn: clockInTime,
+      clockOut: now,
+    });
+    if (shiftStatusResult) {
+      status = shiftStatusResult.status;
+      isOvertime = shiftStatusResult.isOvertime;
+      overtimeMinutes = shiftStatusResult.overtimeMinutes;
     }
   }
 
@@ -297,7 +287,9 @@ export async function clockOutAction(data: ClockOutInput) {
     })
     .eq("id", parsed.data.attendance_id);
 
-  if (updateError) throw new Error(updateError.message);
+  if (updateError) handleActionError(updateError, "clockOutAction", { attendanceId: parsed.data.attendance_id });
+
+  logger.info("clockOutAction", "Employee clocked out", { attendanceId: parsed.data.attendance_id, totalMinutes, status });
 
   revalidatePath("/dashboard/attendance");
   revalidatePath("/dashboard");
@@ -331,8 +323,7 @@ export async function getTodayStatusAction(): Promise<TodayStatusResult> {
     return { status: "not_clocked_in" };
   }
 
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
+  const todayStart = getTodayStart();
 
   const { data: records } = await supabase
     .from("attendance_records")
@@ -382,6 +373,6 @@ export async function getMyAttendanceAction(filters?: AttendanceFilters) {
     .lte("clock_in", to.toISOString())
     .order("clock_in", { ascending: false });
 
-  if (error) throw new Error(error.message);
+  if (error) handleActionError(error, "getMyAttendanceAction");
   return data;
 }

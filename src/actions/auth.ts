@@ -1,7 +1,9 @@
 "use server";
 
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { createClient } from "@/lib/supabase/server";
+import { isRateLimited } from "@/lib/rate-limit";
 import {
   signupSchema,
   loginSchema,
@@ -15,10 +17,20 @@ export type ActionState = {
   success?: boolean;
 };
 
+async function getClientIp() {
+  const h = await headers();
+  return h.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
+}
+
 export async function signupAction(
   _prev: ActionState,
   formData: FormData
 ): Promise<ActionState> {
+  const ip = await getClientIp();
+  if (isRateLimited(`signup:${ip}`, { maxRequests: 5, windowMs: 60_000 })) {
+    return { error: "Too many signup attempts. Please try again in a minute." };
+  }
+
   const raw = {
     full_name: formData.get("full_name") as string,
     email: formData.get("email") as string,
@@ -37,7 +49,7 @@ export async function signupAction(
     password: result.data.password,
     options: {
       data: { full_name: result.data.full_name },
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_SUPABASE_URL ? "" : ""}${getBaseUrl()}/auth/callback`,
+      emailRedirectTo: `${getBaseUrl()}/auth/callback`,
     },
   });
 
@@ -52,6 +64,11 @@ export async function loginAction(
   _prev: ActionState,
   formData: FormData
 ): Promise<ActionState> {
+  const ip = await getClientIp();
+  if (isRateLimited(`login:${ip}`, { maxRequests: 10, windowMs: 60_000 })) {
+    return { error: "Too many login attempts. Please try again in a minute." };
+  }
+
   const raw = {
     email: formData.get("email") as string,
     password: formData.get("password") as string,
@@ -103,6 +120,11 @@ export async function resetPasswordAction(
   _prev: ActionState,
   formData: FormData
 ): Promise<ActionState> {
+  const ip = await getClientIp();
+  if (isRateLimited(`reset:${ip}`, { maxRequests: 3, windowMs: 60_000 })) {
+    return { error: "Too many password reset requests. Please try again in a minute." };
+  }
+
   const raw = { email: formData.get("email") as string };
 
   const result = resetPasswordSchema.safeParse(raw);

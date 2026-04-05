@@ -37,10 +37,6 @@ export interface AttendanceRecord {
   updated_at: string;
 }
 
-export interface AttendanceWithEmployee extends AttendanceRecord {
-  employees: { full_name: string; employee_number: string } | null;
-}
-
 export interface AttendanceWithDetails extends AttendanceRecord {
   employees: { full_name: string; employee_number: string } | null;
   locations: { name: string; city: string } | null;

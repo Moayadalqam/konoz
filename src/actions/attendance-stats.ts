@@ -2,7 +2,9 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAuth } from "@/lib/auth/dal";
+import { requireAuth, requireRole } from "@/lib/auth/dal";
+import { getTodayStart } from "@/lib/date-utils";
+import type { AttendanceTrendPoint } from "@/lib/validations/reports";
 
 export interface AttendanceStats {
   totalEmployees: number;
@@ -20,11 +22,10 @@ export interface AttendanceStats {
 }
 
 export async function getAttendanceStatsAction(): Promise<AttendanceStats> {
-  await requireAuth();
+  await requireRole("admin", "hr_officer");
   const adminClient = createAdminClient();
 
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
+  const todayStart = getTodayStart();
 
   // Get all active employees with their locations
   const { data: employees } = await adminClient
@@ -109,17 +110,10 @@ export async function getAttendanceStatsAction(): Promise<AttendanceStats> {
   return { totalEmployees, presentToday, absentToday, lateToday, overtimeThisWeek, sites };
 }
 
-export interface AttendanceTrendPoint {
-  date: string;
-  present: number;
-  absent: number;
-  late: number;
-}
-
 export async function getAttendanceTrendAction(
   days: number = 7
-): Promise<AttendanceTrendPoint[]> {
-  await requireAuth();
+) {
+  await requireRole("admin", "hr_officer");
   const adminClient = createAdminClient();
 
   // Get total active employees
@@ -179,6 +173,98 @@ export async function getAttendanceTrendAction(
   return trend;
 }
 
+export interface EmployeeDashboardStats {
+  daysThisWeek: number;
+  hoursThisMonth: number;
+  lateThisMonth: number;
+  recentRecords: {
+    id: string;
+    clock_in: string;
+    clock_out: string | null;
+    status: string;
+    total_minutes: number | null;
+    location_name: string;
+  }[];
+}
+
+export async function getEmployeeDashboardStats(): Promise<EmployeeDashboardStats> {
+  const profile = await requireAuth();
+  const supabase = await createClient();
+
+  const { data: employee } = await supabase
+    .from("employees")
+    .select("id")
+    .eq("profile_id", profile.id)
+    .single();
+
+  if (!employee) {
+    return { daysThisWeek: 0, hoursThisMonth: 0, lateThisMonth: 0, recentRecords: [] };
+  }
+
+  // Week start (Sunday)
+  const weekStart = new Date();
+  weekStart.setDate(weekStart.getDate() - weekStart.getDay());
+  weekStart.setHours(0, 0, 0, 0);
+
+  // Month start
+  const monthStart = new Date();
+  monthStart.setDate(1);
+  monthStart.setHours(0, 0, 0, 0);
+
+  // Parallel: week records, month records, recent 5
+  const [weekResult, monthResult, recentResult] = await Promise.all([
+    supabase
+      .from("attendance_records")
+      .select("clock_in")
+      .eq("employee_id", employee.id)
+      .gte("clock_in", weekStart.toISOString()),
+    supabase
+      .from("attendance_records")
+      .select("total_minutes, status")
+      .eq("employee_id", employee.id)
+      .gte("clock_in", monthStart.toISOString()),
+    supabase
+      .from("attendance_records")
+      .select("id, clock_in, clock_out, status, total_minutes, locations(name)")
+      .eq("employee_id", employee.id)
+      .order("clock_in", { ascending: false })
+      .limit(5),
+  ]);
+
+  // Unique days this week
+  const uniqueDays = new Set(
+    (weekResult.data ?? []).map((r) => r.clock_in.slice(0, 10))
+  );
+
+  // Hours this month
+  const totalMinutes = (monthResult.data ?? []).reduce(
+    (sum, r) => sum + (r.total_minutes ?? 0),
+    0
+  );
+
+  // Late count this month
+  const lateCount = (monthResult.data ?? []).filter(
+    (r) => r.status === "late"
+  ).length;
+
+  // Map recent records
+  const recentRecords = (recentResult.data ?? []).map((r) => ({
+    id: r.id,
+    clock_in: r.clock_in,
+    clock_out: r.clock_out,
+    status: r.status,
+    total_minutes: r.total_minutes,
+    location_name: (r.locations as unknown as { name: string } | null)?.name ?? "Unknown",
+  }));
+
+  return {
+    daysThisWeek: uniqueDays.size,
+    hoursThisMonth: Math.round(totalMinutes / 60 * 10) / 10,
+    lateThisMonth: lateCount,
+    recentRecords,
+  };
+}
+
 export async function getSupervisorStatsAction() {
   const profile = await requireAuth();
   const supabase = await createClient();
@@ -202,8 +288,7 @@ export async function getSupervisorStatsAction() {
     .eq("is_active", true);
 
   // Get today's attendance count
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
+  const todayStart = getTodayStart();
 
   const { count: present } = await supabase
     .from("attendance_records")

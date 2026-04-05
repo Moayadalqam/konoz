@@ -1,8 +1,9 @@
 "use server";
 
 import { createAdminClient } from "@/lib/supabase/admin";
-import { requireAuth } from "@/lib/auth/dal";
+import { requireRole } from "@/lib/auth/dal";
 import { revalidatePath } from "next/cache";
+import { handleActionError } from "@/lib/errors";
 import { computeShiftStatus } from "@/lib/shifts/time-rules";
 import type { Shift } from "@/lib/validations/shift";
 import {
@@ -22,11 +23,7 @@ import {
 // ── Helpers ──
 
 async function requireHrOrAdmin() {
-  const profile = await requireAuth();
-  if (profile.role !== "admin" && profile.role !== "hr_officer") {
-    throw new Error("Unauthorized: HR Officer or Admin access required");
-  }
-  return profile;
+  return requireRole("admin", "hr_officer");
 }
 
 async function logHrAction(
@@ -151,7 +148,7 @@ export async function correctAttendanceAction(data: CorrectionInput) {
     .update(updates)
     .eq("id", parsed.data.attendance_id);
 
-  if (updateError) throw new Error(updateError.message);
+  if (updateError) handleActionError(updateError, "correctAttendanceAction");
 
   // Log the action
   await logHrAction(adminClient, {
@@ -211,7 +208,7 @@ export async function decideOvertimeAction(data: OvertimeDecisionInput) {
     })
     .eq("id", parsed.data.attendance_id);
 
-  if (updateError) throw new Error(updateError.message);
+  if (updateError) handleActionError(updateError, "decideOvertimeAction");
 
   const actionType =
     parsed.data.decision === "approved"
@@ -257,7 +254,7 @@ export async function getPendingOvertimeAction(): Promise<
       clock_out,
       overtime_minutes,
       overtime_status,
-      employees!inner(full_name, employee_number),
+      employees!attendance_records_employee_id_fkey(full_name, employee_number),
       locations(name),
       shifts(name)
     `
@@ -266,7 +263,7 @@ export async function getPendingOvertimeAction(): Promise<
     .eq("overtime_status", "pending")
     .order("clock_in", { ascending: false });
 
-  if (error) throw new Error(error.message);
+  if (error) handleActionError(error, "getPendingOvertimeAction");
   if (!data) return [];
 
   return data.map((row) => {
@@ -331,7 +328,7 @@ export async function createWarningAction(data: WarningInput) {
     .select("id")
     .single();
 
-  if (insertError) throw new Error(insertError.message);
+  if (insertError) handleActionError(insertError, "issueWarningAction");
 
   await logHrAction(adminClient, {
     action_type: "warning",
@@ -384,7 +381,7 @@ export async function getEmployeeWarningsAction(
     .eq("employee_id", employeeId)
     .order("created_at", { ascending: false });
 
-  if (error) throw new Error(error.message);
+  if (error) handleActionError(error, "getWarningsAction");
   if (!data) return [];
 
   return data.map((row) => {
@@ -469,7 +466,7 @@ export async function markLeaveAction(data: LeaveMarkInput) {
       })
       .eq("id", existingRecord.id);
 
-    if (updateError) throw new Error(updateError.message);
+    if (updateError) handleActionError(updateError, "markLeaveAction");
   } else {
     // Insert new record
     const { data: inserted, error: insertError } = await adminClient
@@ -487,7 +484,7 @@ export async function markLeaveAction(data: LeaveMarkInput) {
       .select("id")
       .single();
 
-    if (insertError) throw new Error(insertError.message);
+    if (insertError) handleActionError(insertError, "markLeaveAction");
     targetRecordId = inserted!.id;
   }
 
@@ -513,7 +510,87 @@ export async function markLeaveAction(data: LeaveMarkInput) {
   return { success: true, record_id: targetRecordId };
 }
 
-// ── 7. Get Audit Log ──
+// ── 7. Get Correctable Records ──
+
+export interface CorrectableRecord {
+  id: string;
+  employee_name: string;
+  employee_number: string;
+  clock_in: string;
+  clock_out: string | null;
+  status: string;
+  location_name: string;
+  shift_name: string | null;
+  is_corrected: boolean;
+}
+
+export async function getCorrectableRecordsAction(
+  filters?: { from?: string; to?: string; search?: string }
+): Promise<CorrectableRecord[]> {
+  await requireHrOrAdmin();
+  const adminClient = createAdminClient();
+
+  // Default: last 7 days
+  const from = filters?.from
+    ? `${filters.from}T00:00:00.000Z`
+    : new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  const to = filters?.to
+    ? `${filters.to}T23:59:59.999Z`
+    : new Date().toISOString();
+
+  const { data, error } = await adminClient
+    .from("attendance_records")
+    .select(
+      `
+      id,
+      clock_in,
+      clock_out,
+      status,
+      is_corrected,
+      employees!attendance_records_employee_id_fkey(full_name, employee_number),
+      locations(name),
+      shifts(name)
+    `
+    )
+    .gte("clock_in", from)
+    .lte("clock_in", to)
+    .order("clock_in", { ascending: false })
+    .limit(50);
+
+  if (error) handleActionError(error, "getCorrectionHistoryAction");
+  if (!data) return [];
+
+  let results = data.map((row) => {
+    const emp = row.employees as unknown as { full_name: string; employee_number: string };
+    const loc = row.locations as unknown as { name: string } | null;
+    const shift = row.shifts as unknown as { name: string } | null;
+
+    return {
+      id: row.id,
+      employee_name: emp.full_name,
+      employee_number: emp.employee_number,
+      clock_in: row.clock_in,
+      clock_out: row.clock_out,
+      status: row.status,
+      location_name: loc?.name ?? "Unknown",
+      shift_name: shift?.name ?? null,
+      is_corrected: row.is_corrected ?? false,
+    };
+  });
+
+  if (filters?.search) {
+    const q = filters.search.toLowerCase();
+    results = results.filter(
+      (r) =>
+        r.employee_name.toLowerCase().includes(q) ||
+        r.employee_number.toLowerCase().includes(q)
+    );
+  }
+
+  return results;
+}
+
+// ── 8. Get Audit Log ──
 
 export async function getAuditLogAction(
   filters?: {
@@ -559,7 +636,7 @@ export async function getAuditLogAction(
 
   const { data, error } = await query;
 
-  if (error) throw new Error(error.message);
+  if (error) handleActionError(error, "getAuditLogAction");
   if (!data) return [];
 
   return data.map((row) => {

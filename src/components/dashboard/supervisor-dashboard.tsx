@@ -9,7 +9,6 @@ import {
 } from "lucide-react";
 import type { Profile } from "@/lib/auth/types";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { PageTransition } from "@/components/transitions/page-transition";
 
 interface SupervisorDashboardProps {
@@ -44,10 +43,13 @@ export function SupervisorDashboard({ profile, siteStats }: SupervisorDashboardP
               Clock in to begin tracking site attendance
             </p>
           </div>
-          <Button size="lg" className="w-full sm:w-auto px-8 h-11 text-base" disabled>
+          <Link
+            href="/dashboard/attendance"
+            className="inline-flex h-11 w-full items-center justify-center gap-2 rounded-lg bg-primary px-8 text-base font-medium text-primary-foreground transition-colors hover:bg-primary/80 sm:w-auto"
+          >
             <Clock className="size-5" />
             Clock In
-          </Button>
+          </Link>
         </CardContent>
       </Card>
 
@@ -60,14 +62,14 @@ export function SupervisorDashboard({ profile, siteStats }: SupervisorDashboardP
 
       {/* Quick actions */}
       <div className="mt-8 flex flex-wrap gap-3">
-        <Button variant="outline" size="lg" render={<Link href="/dashboard/bulk-checkin" />}>
+        <Link href="/dashboard/bulk-checkin" className="inline-flex items-center gap-2 rounded-lg border border-input bg-background px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent">
           <UserCheck className="size-4" />
           Bulk Check-in
-        </Button>
-        <Button variant="outline" size="lg" render={<Link href="/dashboard/site-attendance" />}>
+        </Link>
+        <Link href="/dashboard/site-attendance" className="inline-flex items-center gap-2 rounded-lg border border-input bg-background px-4 py-2.5 text-sm font-medium text-foreground transition-colors hover:bg-accent">
           <Users className="size-4" />
           Site Attendance
-        </Button>
+        </Link>
       </div>
 
       {/* Activity placeholder */}

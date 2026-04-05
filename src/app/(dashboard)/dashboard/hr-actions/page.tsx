@@ -5,7 +5,6 @@ import { HrActionsPage } from "@/components/hr-actions/hr-actions-page";
 
 export default async function HrActionsRoute() {
   const profile = await requireAuth();
-
   if (profile.role !== "admin" && profile.role !== "hr_officer") {
     redirect("/dashboard");
   }

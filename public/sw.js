@@ -56,11 +56,24 @@ self.addEventListener("fetch", (event) => {
   // Navigation requests: network-first, fall back to cache
   if (request.mode === "navigate") {
     event.respondWith(
-      fetch(request).catch(() =>
-        caches
-          .match(request)
-          .then((cached) => cached || caches.match("/dashboard/attendance"))
-      )
+      fetch(request)
+        .then((response) => {
+          // Redirected responses cannot be used with respondWith for navigations.
+          // Create a fresh response to strip the redirected flag.
+          if (response.redirected) {
+            return new Response(response.body, {
+              status: response.status,
+              statusText: response.statusText,
+              headers: response.headers,
+            });
+          }
+          return response;
+        })
+        .catch(() =>
+          caches
+            .match(request)
+            .then((cached) => cached || caches.match("/dashboard/attendance"))
+        )
     );
     return;
   }

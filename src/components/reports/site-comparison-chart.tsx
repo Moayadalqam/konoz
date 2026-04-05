@@ -1,7 +1,7 @@
 "use client";
 
+import { useRef, useState, useEffect, useCallback } from "react";
 import {
-  ResponsiveContainer,
   BarChart,
   Bar,
   XAxis,
@@ -60,7 +60,32 @@ function CustomTooltip({
   );
 }
 
+function useContainerWidth(ref: React.RefObject<HTMLDivElement | null>) {
+  const [width, setWidth] = useState(0);
+
+  const updateWidth = useCallback(() => {
+    if (!ref.current) return;
+    const w = ref.current.getBoundingClientRect().width;
+    if (w > 0) {
+      setWidth((prev) => (prev === Math.floor(w) ? prev : Math.floor(w)));
+    }
+  }, [ref]);
+
+  useEffect(() => {
+    if (!ref.current) return;
+    const observer = new ResizeObserver(updateWidth);
+    observer.observe(ref.current);
+    updateWidth();
+    return () => observer.disconnect();
+  }, [ref, updateWidth]);
+
+  return width;
+}
+
 export function SiteComparisonChart({ data }: SiteComparisonChartProps) {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const width = useContainerWidth(containerRef);
+
   if (!data.length) {
     return (
       <div className="flex h-[300px] items-center justify-center rounded-lg border border-dashed border-border">
@@ -74,9 +99,11 @@ export function SiteComparisonChart({ data }: SiteComparisonChartProps) {
   const chartHeight = Math.max(200, data.length * 48 + 40);
 
   return (
-    <div style={{ height: chartHeight }} className="w-full">
-      <ResponsiveContainer width="100%" height="100%">
+    <div ref={containerRef} style={{ height: chartHeight }} className="w-full">
+      {width > 0 && (
         <BarChart
+          width={width}
+          height={chartHeight}
           data={data}
           layout="vertical"
           margin={{ top: 4, right: 48, left: 8, bottom: 4 }}
@@ -135,7 +162,7 @@ export function SiteComparisonChart({ data }: SiteComparisonChartProps) {
             />
           </Bar>
         </BarChart>
-      </ResponsiveContainer>
+      )}
     </div>
   );
 }
