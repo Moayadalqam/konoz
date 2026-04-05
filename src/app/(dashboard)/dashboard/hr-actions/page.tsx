@@ -10,12 +10,22 @@ export default async function HrActionsRoute() {
     redirect("/dashboard");
   }
 
-  const admin = createAdminClient();
-  const { data: employees } = await admin
-    .from("employees")
-    .select("id, full_name, employee_number")
-    .eq("is_active", true)
-    .order("full_name");
+  let employees: { id: string; full_name: string; employee_number: string }[] = [];
+  try {
+    const admin = createAdminClient();
+    const { data, error } = await admin
+      .from("employees")
+      .select("id, full_name, employee_number")
+      .eq("is_active", true)
+      .order("full_name");
 
-  return <HrActionsPage employees={employees ?? []} />;
+    if (error) {
+      console.error("[hr-actions] Supabase error:", error.message);
+    }
+    employees = data ?? [];
+  } catch (err) {
+    console.error("[hr-actions] Unexpected error:", err);
+  }
+
+  return <HrActionsPage employees={employees} />;
 }

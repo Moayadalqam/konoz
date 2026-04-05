@@ -15,10 +15,13 @@ export default function NotFound() {
             The page you&apos;re looking for doesn&apos;t exist or has been moved.
           </p>
         </div>
-        <Button render={<Link href="/dashboard" />} size="lg">
+        <Link
+          href="/dashboard"
+          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-primary px-2.5 text-sm font-medium text-primary-foreground transition-colors hover:bg-primary/80"
+        >
           <Home className="size-4" />
           Back to Dashboard
-        </Button>
+        </Link>
       </div>
     </div>
   )

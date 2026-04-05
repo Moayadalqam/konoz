@@ -1,4 +1,4 @@
-const CACHE_VERSION = "kunoz-v1";
+const CACHE_VERSION = "kunoz-v2";
 const APP_SHELL_URLS = ["/dashboard/attendance"];
 
 // Install: pre-cache app shell

@@ -30,10 +30,13 @@ export default function DashboardPageError({
             <RefreshCw className="size-4" />
             Try again
           </Button>
-          <Button render={<Link href="/dashboard" />} variant="ghost" size="lg">
+          <Link
+            href="/dashboard"
+            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg px-2.5 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
             <Home className="size-4" />
             Dashboard
-          </Button>
+          </Link>
         </div>
       </div>
     </div>
