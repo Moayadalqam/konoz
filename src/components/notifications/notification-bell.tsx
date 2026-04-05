@@ -5,7 +5,6 @@ import { Bell } from "lucide-react";
 import { toast } from "sonner";
 import { createClient } from "@/lib/supabase/client";
 import { getUnreadCountAction } from "@/actions/notifications";
-import { Button } from "@/components/ui/button";
 import {
   Popover,
   PopoverTrigger,
@@ -84,7 +83,10 @@ export function NotificationBell({ userId }: NotificationBellProps) {
   }, []);
 
   const bellButton = (
-    <Button variant="ghost" size="icon" className="relative">
+    <button
+      type="button"
+      className="relative inline-flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
+    >
       <Bell className="size-[18px]" />
       {unreadCount > 0 && (
         <span
@@ -100,7 +102,7 @@ export function NotificationBell({ userId }: NotificationBellProps) {
       <span className="sr-only">
         {unreadCount > 0 ? `${unreadCount} unread notifications` : "Notifications"}
       </span>
-    </Button>
+    </button>
   );
 
   if (isMobile) {
