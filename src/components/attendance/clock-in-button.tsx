@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   XCircle,
+  Camera,
 } from "lucide-react";
 import { GpsStatus } from "./gps-status";
 import { AttendanceStatus } from "./attendance-status";
@@ -28,6 +29,7 @@ type Phase =
   | "loading"
   | "idle"
   | "gps"
+  | "photo"
   | "submitting"
   | "success"
   | "success_offline"
@@ -47,6 +49,10 @@ export function ClockInButton() {
 
   // Whether we're doing a clock-out GPS acquisition (vs clock-in)
   const [isClockOutFlow, setIsClockOutFlow] = useState(false);
+
+  // Photo capture
+  const [photoBase64, setPhotoBase64] = useState<string | null>(null);
+  const [pendingGps, setPendingGps] = useState<{ lat: number; lng: number; accuracy: number } | null>(null);
 
   // Offline session tracking
   const [offlineSessionId, setOfflineSessionId] = useState<string | null>(null);
@@ -96,77 +102,120 @@ export function ClockInButton() {
       });
     });
 
+  const compressPhoto = (file: File): Promise<string> =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          const MAX = 800;
+          let w = img.width;
+          let h = img.height;
+          if (w > MAX || h > MAX) {
+            if (w > h) { h = Math.round((h * MAX) / w); w = MAX; }
+            else { w = Math.round((w * MAX) / h); h = MAX; }
+          }
+          canvas.width = w;
+          canvas.height = h;
+          canvas.getContext("2d")!.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL("image/jpeg", 0.7));
+        };
+        img.onerror = reject;
+        img.src = reader.result as string;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+
+  const submitClockIn = async (photo: string | null) => {
+    setPhase("submitting");
+    const gps = pendingGps!;
+
+    startTransition(async () => {
+      try {
+        const result: ClockInResult = await attemptClockIn({
+          latitude: gps.lat,
+          longitude: gps.lng,
+          accuracy: gps.accuracy,
+          photo_base64: photo ?? undefined,
+        });
+
+        if (result.offline) {
+          setOfflineSessionId(result.session_id);
+          setPhase("success_offline");
+          navigator.vibrate?.([100, 50, 100]);
+          toast.info("Saved offline — will sync when connected", {
+            description: new Date(result.time).toLocaleTimeString("en-US", {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+            }),
+          });
+          await fetchStatus();
+          setTimeout(() => setPhase("idle"), 2000);
+        } else {
+          setLocationName(result.location_name);
+          setOutsideGeofence(!result.within_geofence);
+          setPhase("success");
+          navigator.vibrate?.(200);
+          setShowPulse(true);
+
+          if (!result.within_geofence) {
+            toast.warning("You clocked in outside your assigned location area");
+          } else {
+            const time = new Date(result.time).toLocaleTimeString("en-US", {
+              hour: "2-digit",
+              minute: "2-digit",
+              hour12: true,
+            });
+            toast.success("Clocked in successfully", {
+              description: `${result.location_name} at ${time}`,
+            });
+          }
+
+          await fetchStatus();
+          setTimeout(() => { setPhase("idle"); setShowPulse(false); }, 2500);
+        }
+      } catch (err) {
+        setPhase("error");
+        setErrorMsg(err instanceof Error ? err.message : "Failed to clock in");
+      }
+    });
+  };
+
+  const handlePhotoCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) {
+      // User cancelled — submit without photo
+      await submitClockIn(null);
+      return;
+    }
+    try {
+      const compressed = await compressPhoto(file);
+      setPhotoBase64(compressed);
+      await submitClockIn(compressed);
+    } catch {
+      // Photo compression failed — submit without photo
+      await submitClockIn(null);
+    }
+  };
+
   const handleClockIn = async () => {
     setPhase("gps");
     setErrorMsg("");
     setIsClockOutFlow(false);
+    setPhotoBase64(null);
 
     try {
       const pos = await getGps();
       setGpsAccuracy(pos.coords.accuracy);
-      setPhase("submitting");
-
-      startTransition(async () => {
-        try {
-          const result: ClockInResult = await attemptClockIn({
-            latitude: pos.coords.latitude,
-            longitude: pos.coords.longitude,
-            accuracy: pos.coords.accuracy,
-          });
-
-          if (result.offline) {
-            // Saved to IndexedDB for later sync
-            setOfflineSessionId(result.session_id);
-            setPhase("success_offline");
-            navigator.vibrate?.([100, 50, 100]);
-            toast.info("Saved offline — will sync when connected", {
-              description: new Date(result.time).toLocaleTimeString("en-US", {
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: true,
-              }),
-            });
-
-            await fetchStatus();
-            setTimeout(() => {
-              setPhase("idle");
-            }, 2000);
-          } else {
-            setLocationName(result.location_name);
-            setOutsideGeofence(!result.within_geofence);
-
-            setPhase("success");
-            navigator.vibrate?.(200);
-            setShowPulse(true);
-
-            if (!result.within_geofence) {
-              toast.warning(
-                "You clocked in outside your assigned location area"
-              );
-            } else {
-              const time = new Date(result.time).toLocaleTimeString("en-US", {
-                hour: "2-digit",
-                minute: "2-digit",
-                hour12: true,
-              });
-              toast.success("Clocked in successfully", {
-                description: `${result.location_name} at ${time}`,
-              });
-            }
-
-            await fetchStatus();
-            setTimeout(() => {
-              setPhase("idle");
-              setShowPulse(false);
-            }, 2500);
-          }
-        } catch (err) {
-          setPhase("error");
-          setErrorMsg(
-            err instanceof Error ? err.message : "Failed to clock in"
-          );
-        }
+      setPendingGps({
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude,
+        accuracy: pos.coords.accuracy,
       });
+      setPhase("photo");
     } catch (err) {
       setPhase("error");
       if (err instanceof GeolocationPositionError) {
@@ -248,6 +297,54 @@ export function ClockInButton() {
           <div className="h-6 w-40 animate-pulse rounded bg-muted" />
         </div>
         <div className="h-16 w-full max-w-xs animate-pulse rounded-xl bg-muted" />
+      </div>
+    );
+  }
+
+  // --- Photo capture ---
+  if (phase === "photo") {
+    return (
+      <div className="flex flex-col items-center gap-5 py-10 animate-in fade-in zoom-in-95 duration-300">
+        <div className="flex size-20 items-center justify-center rounded-full bg-primary/10">
+          <Camera className="size-10 text-primary" />
+        </div>
+        <div className="text-center">
+          <p className="font-heading text-lg font-semibold text-foreground">
+            Take a photo
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Snap a quick selfie to verify your presence
+          </p>
+        </div>
+        {gpsAccuracy !== null && <GpsStatus accuracy={gpsAccuracy} />}
+
+        <label
+          className={cn(
+            "relative h-16 w-full max-w-xs rounded-xl bg-primary text-lg font-bold text-primary-foreground",
+            "transition-all duration-200 ease-out cursor-pointer",
+            "hover:bg-primary/90 hover:scale-[1.02]",
+            "active:scale-[0.98]",
+            "focus-within:outline-none focus-within:ring-3 focus-within:ring-primary/40",
+            "flex items-center justify-center gap-2.5"
+          )}
+        >
+          <Camera className="size-5" />
+          Open Camera
+          <input
+            type="file"
+            accept="image/*"
+            capture="user"
+            className="sr-only"
+            onChange={handlePhotoCapture}
+          />
+        </label>
+
+        <button
+          onClick={() => submitClockIn(null)}
+          className="text-sm font-medium text-muted-foreground underline-offset-4 hover:text-foreground hover:underline transition-colors"
+        >
+          Skip photo
+        </button>
       </div>
     );
   }

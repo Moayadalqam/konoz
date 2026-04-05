@@ -40,6 +40,7 @@ export interface OnlineClockInResult {
   time: string;
   shift_id: string | null;
   status: string;
+  photo_url?: string | null;
 }
 
 export type ClockInResult = OfflineClockInResult | OnlineClockInResult;

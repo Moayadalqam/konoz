@@ -109,6 +109,35 @@ export async function clockInAction(data: ClockInInput) {
     }
   }
 
+  // Upload photo if provided
+  let photoUrl: string | null = null;
+  if (parsed.data.photo_base64) {
+    const base64 = parsed.data.photo_base64;
+    const match = base64.match(/^data:(image\/\w+);base64,(.+)$/);
+    if (match) {
+      const mimeType = match[1];
+      const ext = mimeType.split("/")[1] === "png" ? "png" : "jpg";
+      const buffer = Buffer.from(match[2], "base64");
+      const filePath = `${employee.id}/${Date.now()}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("attendance-photos")
+        .upload(filePath, buffer, {
+          contentType: mimeType,
+          upsert: false,
+        });
+
+      if (!uploadError) {
+        const { data: urlData } = supabase.storage
+          .from("attendance-photos")
+          .getPublicUrl(filePath);
+        photoUrl = urlData.publicUrl;
+      } else {
+        logger.warn("clockInAction", "Photo upload failed", { error: uploadError.message });
+      }
+    }
+  }
+
   const { data: insertedRecord, error: insertError } = await supabase
     .from("attendance_records")
     .insert({
@@ -120,6 +149,7 @@ export async function clockInAction(data: ClockInInput) {
       clock_in_accuracy: parsed.data.accuracy ?? null,
       clock_in_within_geofence: withinGeofence,
       clock_in_method: "self",
+      clock_in_photo_url: photoUrl,
       submitted_by: employee.id,
       client_created_at: now,
       notes: gpsCheck.warnings.length > 0
@@ -181,6 +211,7 @@ export async function clockInAction(data: ClockInInput) {
     time: now,
     shift_id: shiftId,
     status,
+    photo_url: photoUrl,
   };
 }
 

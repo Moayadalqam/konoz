@@ -277,7 +277,7 @@ export async function getSiteAttendanceAction(): Promise<SiteEmployeeAttendance[
 
   const { data: records } = await supabase
     .from("attendance_records")
-    .select("id, employee_id, clock_in, clock_out, total_minutes, clock_in_method, notes, status, shift_id, is_overtime, overtime_minutes, shifts(name)")
+    .select("id, employee_id, clock_in, clock_out, total_minutes, clock_in_method, notes, status, shift_id, is_overtime, overtime_minutes, clock_in_photo_url, shifts(name)")
     .in("employee_id", employeeIds)
     .gte("clock_in", todayStart.toISOString())
     .order("clock_in", { ascending: false });
@@ -323,6 +323,7 @@ export async function getSiteAttendanceAction(): Promise<SiteEmployeeAttendance[
         attendance_status: record.status as SiteEmployeeAttendance["attendance_status"],
         is_overtime: record.is_overtime ?? false,
         overtime_minutes: record.overtime_minutes ?? 0,
+        clock_in_photo_url: record.clock_in_photo_url,
       };
     }
 
@@ -341,6 +342,7 @@ export async function getSiteAttendanceAction(): Promise<SiteEmployeeAttendance[
       attendance_status: record.status as SiteEmployeeAttendance["attendance_status"],
       is_overtime: record.is_overtime ?? false,
       overtime_minutes: record.overtime_minutes ?? 0,
+      clock_in_photo_url: record.clock_in_photo_url,
     };
   });
 }

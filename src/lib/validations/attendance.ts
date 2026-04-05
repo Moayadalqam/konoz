@@ -24,6 +24,7 @@ export interface AttendanceRecord {
     | "manual_correction"
     | "auto_shift_end"
     | null;
+  clock_in_photo_url: string | null;
   status: "present" | "late" | "early_departure" | "absent" | "on_leave";
   total_minutes: number | null;
   is_overtime: boolean;
@@ -65,6 +66,7 @@ export interface SiteEmployeeAttendance {
   attendance_status?: "present" | "late" | "early_departure" | "absent" | "on_leave";
   is_overtime?: boolean;
   overtime_minutes?: number;
+  clock_in_photo_url?: string | null;
 }
 
 // ── Zod Schemas ──
@@ -73,6 +75,7 @@ export const clockInSchema = z.object({
   latitude: z.number().min(-90).max(90),
   longitude: z.number().min(-180).max(180),
   accuracy: z.number().min(0).optional(),
+  photo_base64: z.string().optional(),
 });
 
 export type ClockInInput = z.infer<typeof clockInSchema>;
