@@ -13,7 +13,6 @@ import {
 import type { Profile } from "@/lib/auth/types";
 import type { AttendanceStats } from "@/actions/attendance-stats";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { PageTransition } from "@/components/transitions/page-transition";
 
 interface AdminDashboardProps {
@@ -97,14 +96,20 @@ export function AdminDashboard({ profile, pendingCount, attendanceStats }: Admin
           Quick Actions
         </h2>
         <div className="flex flex-wrap gap-3">
-          <Button variant="outline" size="lg" render={<Link href="/dashboard/locations" />}>
+          <Link
+            href="/dashboard/locations"
+            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-border bg-background px-2.5 text-sm font-medium transition-colors hover:bg-muted hover:text-foreground"
+          >
             <BarChart3 className="size-4" />
             View Locations
-          </Button>
-          <Button variant="outline" size="lg" render={<Link href="/admin/users" />}>
+          </Link>
+          <Link
+            href="/admin/users"
+            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-border bg-background px-2.5 text-sm font-medium transition-colors hover:bg-muted hover:text-foreground"
+          >
             <Shield className="size-4" />
             Manage Users
-          </Button>
+          </Link>
         </div>
       </div>
     </PageTransition>
