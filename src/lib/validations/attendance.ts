@@ -71,6 +71,8 @@ export interface SiteEmployeeAttendance {
   is_overtime?: boolean;
   overtime_minutes?: number;
   clock_in_photo_url?: string | null;
+  clock_in_lat?: number | null;
+  clock_in_lng?: number | null;
 }
 
 // ── Zod Schemas ──

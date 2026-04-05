@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans, Inter, JetBrains_Mono } from "next/font/google";
+import { Playfair_Display, Inter, JetBrains_Mono } from "next/font/google";
 import { Toaster } from "@/components/ui/sonner";
 import { ServiceWorkerRegister } from "@/components/pwa/sw-register";
+import { SplashScreen } from "@/components/splash/splash-screen";
 import "./globals.css";
 
-const plusJakarta = Plus_Jakarta_Sans({
+const playfair = Playfair_Display({
   variable: "--font-heading",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
@@ -42,10 +43,12 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${plusJakarta.variable} ${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className={`${playfair.variable} ${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans">
-        {children}
+        <SplashScreen>
+          {children}
+        </SplashScreen>
         <ServiceWorkerRegister />
         <Toaster richColors position="top-right" />
       </body>

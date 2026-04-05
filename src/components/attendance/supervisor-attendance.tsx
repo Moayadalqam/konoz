@@ -270,6 +270,7 @@ export function SupervisorAttendance({
                 <TableHead>Status</TableHead>
                 <TableHead>Time</TableHead>
                 <TableHead className="hidden md:table-cell">Photo</TableHead>
+                <TableHead className="hidden md:table-cell">Location</TableHead>
                 <TableHead className="hidden md:table-cell">Method</TableHead>
                 <TableHead className="w-12 pr-4 text-right">
                   <span className="sr-only">Actions</span>
@@ -407,6 +408,23 @@ export function SupervisorAttendance({
                             <Camera className="size-3.5 text-white opacity-0 transition-opacity group-hover:opacity-100" />
                           </span>
                         </button>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">--</span>
+                      )}
+                    </TableCell>
+
+                    {/* Location (GPS) */}
+                    <TableCell className="hidden md:table-cell">
+                      {emp.clock_in_lat && emp.clock_in_lng ? (
+                        <a
+                          href={`https://www.google.com/maps?q=${emp.clock_in_lat},${emp.clock_in_lng}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                        >
+                          <MapPin className="size-3" />
+                          View Map
+                        </a>
                       ) : (
                         <span className="text-xs text-muted-foreground">--</span>
                       )}
@@ -569,6 +587,28 @@ export function SupervisorAttendance({
                         {emp.shift_name}
                       </p>
                     )}
+                    {/* Mobile: photo + location row */}
+                    <div className="mt-2 flex items-center gap-3">
+                      {emp.clock_in_photo_url && (
+                        <button
+                          onClick={() => setEnlargedPhoto({ url: emp.clock_in_photo_url!, name: emp.full_name })}
+                          className="size-8 overflow-hidden rounded-md border border-border"
+                        >
+                          <img src={emp.clock_in_photo_url} alt="" className="size-full object-cover" />
+                        </button>
+                      )}
+                      {emp.clock_in_lat && emp.clock_in_lng && (
+                        <a
+                          href={`https://www.google.com/maps?q=${emp.clock_in_lat},${emp.clock_in_lng}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs text-primary"
+                        >
+                          <MapPin className="size-3" />
+                          View Location
+                        </a>
+                      )}
+                    </div>
                   </div>
                 )}
 

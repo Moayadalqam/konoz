@@ -260,15 +260,20 @@ export async function batchClockOutAction(employeeIds: string[]) {
 export async function getSiteAttendanceAction(): Promise<SiteEmployeeAttendance[]> {
   const profile = await requireRole("supervisor", "admin", "hr_officer");
   const supabase = await createClient();
-  const supervisor = await getEmployeeForProfile(supabase, profile.id);
 
-  // Get all active employees at this location
-  const { data: employees, error: empError } = await supabase
+  // Admin/HR see ALL employees; supervisor sees only their location
+  let employeeQuery = supabase
     .from("employees")
     .select("id, full_name, employee_number")
-    .eq("primary_location_id", supervisor.primary_location_id!)
     .eq("is_active", true)
     .order("full_name");
+
+  if (profile.role === "supervisor") {
+    const supervisor = await getEmployeeForProfile(supabase, profile.id);
+    employeeQuery = employeeQuery.eq("primary_location_id", supervisor.primary_location_id!);
+  }
+
+  const { data: employees, error: empError } = await employeeQuery;
 
   if (empError) throw new Error(empError.message);
   if (!employees || employees.length === 0) return [];
@@ -281,7 +286,7 @@ export async function getSiteAttendanceAction(): Promise<SiteEmployeeAttendance[
 
   const { data: records } = await supabase
     .from("attendance_records")
-    .select("id, employee_id, clock_in, clock_out, total_minutes, clock_in_method, notes, status, shift_id, is_overtime, overtime_minutes, clock_in_photo_url, shifts(name)")
+    .select("id, employee_id, clock_in, clock_out, total_minutes, clock_in_method, notes, status, shift_id, is_overtime, overtime_minutes, clock_in_photo_url, clock_in_lat, clock_in_lng, shifts(name)")
     .in("employee_id", employeeIds)
     .gte("clock_in", todayStart.toISOString())
     .order("clock_in", { ascending: false });
@@ -328,6 +333,8 @@ export async function getSiteAttendanceAction(): Promise<SiteEmployeeAttendance[
         is_overtime: record.is_overtime ?? false,
         overtime_minutes: record.overtime_minutes ?? 0,
         clock_in_photo_url: record.clock_in_photo_url,
+        clock_in_lat: record.clock_in_lat,
+        clock_in_lng: record.clock_in_lng,
       };
     }
 
@@ -347,6 +354,8 @@ export async function getSiteAttendanceAction(): Promise<SiteEmployeeAttendance[
       is_overtime: record.is_overtime ?? false,
       overtime_minutes: record.overtime_minutes ?? 0,
       clock_in_photo_url: record.clock_in_photo_url,
+      clock_in_lat: record.clock_in_lat,
+      clock_in_lng: record.clock_in_lng,
     };
   });
 }
@@ -408,6 +417,12 @@ export async function flagAnomalyAction(
 export async function getLocationForSupervisor() {
   const profile = await requireRole("supervisor", "admin", "hr_officer");
   const supabase = await createClient();
+
+  // Admin/HR see all locations
+  if (profile.role === "admin" || profile.role === "hr_officer") {
+    return { id: "all", name: "All Locations", city: "" };
+  }
+
   const supervisor = await getEmployeeForProfile(supabase, profile.id);
 
   const { data: location } = await supabase
