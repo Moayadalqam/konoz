@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useEffect, useTransition } from "react";
 import {
   Dialog,
   DialogContent,
@@ -54,6 +54,18 @@ export function LocationForm({
     location?.google_maps_url ?? ""
   );
   const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // Reset form state when the location prop changes (edit different location or new)
+  useEffect(() => {
+    setName(location?.name ?? "");
+    setCity(location?.city ?? "");
+    setAddress(location?.address ?? "");
+    setLatitude(location?.latitude ?? 24.7136);
+    setLongitude(location?.longitude ?? 46.6753);
+    setRadius(location?.geofence_radius_meters ?? 200);
+    setGoogleMapsUrl(location?.google_maps_url ?? "");
+    setErrors({});
+  }, [location]);
 
   function handleMapClick(lat: number, lng: number) {
     setLatitude(lat);

@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import type { LocationWithCount } from "./locations-page";
+import type { LocationWithCount } from "@/lib/validations/location";
 
 interface LocationListProps {
   locations: LocationWithCount[];

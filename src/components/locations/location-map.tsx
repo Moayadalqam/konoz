@@ -6,7 +6,7 @@ import "leaflet/dist/leaflet.css";
 import markerIcon2x from "leaflet/dist/images/marker-icon-2x.png";
 import markerIcon from "leaflet/dist/images/marker-icon.png";
 import markerShadow from "leaflet/dist/images/marker-shadow.png";
-import type { LocationWithCount } from "./locations-page";
+import type { LocationWithCount } from "@/lib/validations/location";
 
 function resolveAssetUrl(asset: unknown): string {
   if (typeof asset === "string") return asset;

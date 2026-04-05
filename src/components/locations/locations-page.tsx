@@ -7,7 +7,7 @@ import { MapPin, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { LocationList } from "@/components/locations/location-list";
 import { LocationForm } from "@/components/locations/location-form";
-import type { Location } from "@/lib/validations/location";
+import type { Location, LocationWithCount } from "@/lib/validations/location";
 
 const LocationMap = dynamic(
   () =>
@@ -26,22 +26,6 @@ const LocationMap = dynamic(
     ),
   }
 );
-
-export interface LocationWithCount {
-  id: string;
-  name: string;
-  name_ar: string | null;
-  city: string;
-  address: string | null;
-  latitude: number;
-  longitude: number;
-  geofence_radius_meters: number;
-  google_maps_url: string | null;
-  is_active: boolean;
-  created_at: string;
-  updated_at: string;
-  employee_count: number;
-}
 
 interface LocationsPageProps {
   locations: LocationWithCount[];
