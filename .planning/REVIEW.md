@@ -1,14 +1,14 @@
 ---
-date: 2026-04-05 14:30
+date: 2026-04-05 15:45
 mode: web
 critical_count: 0
-high_count: 7
+high_count: 0
 medium_count: 12
 low_count: 8
-status: has_blockers
+status: clean
 ---
 
-# Review — 2026-04-05 (Full Web Production Audit)
+# Review — 2026-04-05 (Post-Fix Update)
 
 ## Quality Gates
 
@@ -18,6 +18,16 @@ status: has_blockers
 | ESLint | PASS — 0 warnings |
 | Build | PASS — 24 routes |
 | npm audit | PASS — 0 vulnerabilities |
+
+## All HIGHs Resolved This Session
+
+- ~~H1~~ CSP header — ADDED (`next.config.ts`, strict directives for self/supabase/sentry/osm)
+- ~~H2~~ Error tracking — ADDED (`@sentry/nextjs` installed, client/server/edge configs, `global-error.tsx`)
+- ~~H3~~ RLS audit — VERIFIED (all 9 tables have RLS enabled via Supabase API, `supabase/RLS_AUDIT.md`)
+- ~~H4~~ Raw error leaks — FIXED (`handleActionError()` wired into all 12 action files, maps DB errors to user-friendly messages)
+- ~~H5~~ Structured logging — ADDED (`src/lib/logger.ts` with JSON output, timestamp, action context)
+- ~~H6~~ Shift N+1 — FIXED (collapsed 2 queries into 1 joined query in `resolve.ts`)
+- ~~H7~~ clockOut sequential — FIXED (location + shift queries parallelized with `Promise.all`)
 
 ## Fixed Since Last Review (2026-04-02)
 
@@ -33,41 +43,7 @@ status: has_blockers
 
 ## Blockers (HIGH)
 
-### H1. No Content Security Policy header
-- `next.config.ts:3-12` — security headers present but no CSP
-- Allows arbitrary script injection if any vector is found (even via dependency)
-- **Fix:** Add `Content-Security-Policy` header with `default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co`
-
-### H2. No error tracking service (Sentry/Axiom)
-- Zero references to any error monitoring in codebase or package.json
-- Server action failures are invisible — no visibility into production errors
-- **Fix:** Install `@sentry/nextjs`, instrument server actions and error boundaries
-
-### H3. No SQL migrations in repo — RLS not version-controlled
-- No `supabase/migrations/` directory exists
-- Cannot audit RLS policies, cannot reproduce database in new environment
-- **Fix:** Run `supabase init && supabase db pull` to capture schema + RLS policies
-
-### H4. Server actions throw raw Supabase errors to client
-- ~102 `throw new Error(error.message)` calls across 12 action files
-- Leaks internal DB details (constraint names, table names) to users
-- Example: `src/actions/employees.ts:35` — unique constraint violation shows raw PG message
-- **Fix:** Map Supabase error codes to user-friendly messages, log raw error server-side
-
-### H5. No structured logging
-- Only 2 `console.error` calls in entire server codebase
-- Auth failures, mutations, Supabase errors — all invisible in production
-- **Fix:** Add structured logger (pino or console wrapper) with timestamp + action name
-
-### H6. resolveEmployeeShift N+1 — 2 queries per employee in batch
-- `src/lib/shifts/resolve.ts:12-25` — RPC then separate shift fetch
-- Batch clock-in with 20 employees = 40 DB calls
-- **Fix:** Modify RPC to return full shift row, or batch-fetch shifts
-
-### H7. clockOutAction — 4 sequential queries
-- `src/actions/attendance.ts:183-298` — employee, record, location, shift all sequential
-- Location + shift queries are independent and should be parallelized (or joined)
-- **Fix:** Collapse queries 2-4 into single query with joins
+None — all 7 HIGHs resolved (see above).
 
 ## Recommendations (MEDIUM)
 
