@@ -1,26 +1,14 @@
 ---
-date: 2026-04-02 12:45
+date: 2026-04-05 14:30
 mode: web
 critical_count: 0
 high_count: 7
-medium_count: 14
+medium_count: 12
 low_count: 8
 status: has_blockers
 ---
 
-# Review — 2026-04-02 (Post-Fix Re-check)
-
-## Fixed This Session (verified)
-- ~~C1~~ Base UI #31 render prop — FIXED (5 occurrences, all use `(props) =>` now)
-- ~~C2~~ Recharts width/height -1 — FIXED (deferred mount with requestAnimationFrame)
-- ~~C3~~ Seed creds in .env.local.example — FIXED (removed)
-- ~~H1~~ Supervisor location ownership — FIXED (addAttendanceNote + flagAnomaly check location_id)
-- ~~H8~~ Ambiguous FK joins — FIXED (explicit `!attendance_records_employee_id_fkey` hints)
-- ~~H9~~ clockOutAction sequential queries — deferred (not a blocker for demo)
-
----
-
-# Previous Review — 2026-04-02 (Full Production Audit)
+# Review — 2026-04-05 (Full Web Production Audit)
 
 ## Quality Gates
 
@@ -31,112 +19,106 @@ status: has_blockers
 | Build | PASS — 24 routes |
 | npm audit | PASS — 0 vulnerabilities |
 
-## Blockers (CRITICAL)
+## Fixed Since Last Review (2026-04-02)
 
-### C1. Base UI Error #31 — render prop receives JSX element instead of component
-- `src/components/notifications/notification-dropdown.tsx:130` — `render={<Link>}`
-- `src/components/layout/topbar.tsx:61` — `render={<Link>}`
-- `src/components/ui/dialog.tsx:112` — `render={<Button>}`
-- `src/components/ui/sheet.tsx:64-69` — `render={<Button>}`
-- **Fix:** Change `render={<Link .../>}` to `render={(props) => <Link {...props} .../>}`
-
-### C2. Recharts width/height -1 on tab switch
-- `src/components/reports/attendance-trend-chart.tsx:78`
-- `src/components/reports/site-comparison-chart.tsx:78`
-- **Fix:** Defer chart render until after mount with `requestAnimationFrame`
-
-### C3. Admin seed password pattern in .env.local.example
-- `.env.local.example:5-6` — `SEED_ADMIN_PASSWORD=change-me-in-production`
-- **Fix:** Remove seed credentials from .env.local.example, rotate actual admin password
+- ~~C1~~ Base UI #31 — FIXED properly (select.tsx Icon/ItemIndicator + supervisor DropdownMenuTrigger render props, topbar DropdownMenuLabel wrapped in Group)
+- ~~C2~~ Recharts -1 dimensions — FIXED properly (replaced ResponsiveContainer with ResizeObserver-based measurement, only renders when dimensions > 0)
+- ~~C3~~ Seed creds in .env.local.example — previously fixed
+- ~~H1~~ Supervisor location ownership — previously fixed
+- ~~H8~~ Ambiguous FK joins — previously fixed
+- ~~5 CRITICAL security issues~~ — fixed in QT1 (open redirect, hardcoded creds, IDOR, filter injection)
+- ~~HIGH auth + deduplication~~ — fixed in QT2 (auth guards, stats role check, consolidation)
+- ~~HIGH performance + MEDIUM~~ — fixed in QT3 (browser Supabase singleton, security headers, Zod, dead code)
+- ~~MEDIUM+LOW batch~~ — fixed in QT4 (utilities, unused types, phone placeholder, admin client)
 
 ## Blockers (HIGH)
 
-### H1. Supervisor actions skip location ownership check
-- `src/actions/supervisor.ts:347-365` — `addAttendanceNoteAction` doesn't verify record belongs to supervisor's site
-- `src/actions/supervisor.ts:372-403` — `flagAnomalyAction` same issue
-- **Fix:** Add `.eq("location_id", supervisor.primary_location_id)` check
+### H1. No Content Security Policy header
+- `next.config.ts:3-12` — security headers present but no CSP
+- Allows arbitrary script injection if any vector is found (even via dependency)
+- **Fix:** Add `Content-Security-Policy` header with `default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://*.supabase.co`
 
-### H2. No SQL migrations in repo — RLS policies not version-controlled
+### H2. No error tracking service (Sentry/Axiom)
+- Zero references to any error monitoring in codebase or package.json
+- Server action failures are invisible — no visibility into production errors
+- **Fix:** Install `@sentry/nextjs`, instrument server actions and error boundaries
+
+### H3. No SQL migrations in repo — RLS not version-controlled
 - No `supabase/migrations/` directory exists
-- **Fix:** Run `supabase init && supabase db pull` to capture schema
+- Cannot audit RLS policies, cannot reproduce database in new environment
+- **Fix:** Run `supabase init && supabase db pull` to capture schema + RLS policies
 
-### H3. updatePasswordAction missing rate limiting
-- `src/actions/auth.ts:148-172` — no `isRateLimited()` call unlike other auth actions
-- **Fix:** Add rate limit check matching login/signup pattern
+### H4. Server actions throw raw Supabase errors to client
+- ~102 `throw new Error(error.message)` calls across 12 action files
+- Leaks internal DB details (constraint names, table names) to users
+- Example: `src/actions/employees.ts:35` — unique constraint violation shows raw PG message
+- **Fix:** Map Supabase error codes to user-friendly messages, log raw error server-side
 
-### H4. Client-controllable limit on getNotificationsAction
-- `src/actions/notifications.ts:10` — accepts any limit from client
-- **Fix:** Clamp to `Math.min(Math.max(1, limit), 100)`
+### H5. No structured logging
+- Only 2 `console.error` calls in entire server codebase
+- Auth failures, mutations, Supabase errors — all invisible in production
+- **Fix:** Add structured logger (pino or console wrapper) with timestamp + action name
 
-### H5. 20+ `as unknown as` type casts on Supabase joins
-- Throughout `src/actions/reports.ts`, `hr-actions.ts`, `attendance-stats.ts`
-- **Fix:** Run `supabase gen types typescript` and replace all casts
-
-### H6. Inconsistent server action error patterns — throw vs return
-- Auth actions return `{ error }`, all others throw `new Error()`
-- **Fix:** Standardize on `Result<T>` pattern across all actions
-
-### H7. resolveEmployeeShift makes 2 sequential queries per call
+### H6. resolveEmployeeShift N+1 — 2 queries per employee in batch
 - `src/lib/shifts/resolve.ts:12-25` — RPC then separate shift fetch
-- Batch clock-in with 50 employees = 100 queries
-- **Fix:** Modify RPC to return full shift row, or batch-fetch for batch operations
+- Batch clock-in with 20 employees = 40 DB calls
+- **Fix:** Modify RPC to return full shift row, or batch-fetch shifts
 
-### H8. Admin dashboard sequential queries
-- `src/app/(dashboard)/dashboard/page.tsx:30-43` — pendingCount then stats
-- `src/actions/attendance-stats.ts:56-82` — overtime query sequential
-- **Fix:** Parallelize with `Promise.all`
-
-### H9. clockOutAction — 4 sequential queries before update
-- `src/actions/attendance.ts:183-265` — employee, record, location, shift in series
-- **Fix:** Parallelize location + shift fetch after record fetch
-
-### H10. Three Google Fonts blocking FCP
-- `src/app/layout.tsx:7-21` — Plus Jakarta Sans + Inter + JetBrains Mono
-- **Fix:** Add `display: "swap"`, limit weights, consider dropping Inter
+### H7. clockOutAction — 4 sequential queries
+- `src/actions/attendance.ts:183-298` — employee, record, location, shift all sequential
+- Location + shift queries are independent and should be parallelized (or joined)
+- **Fix:** Collapse queries 2-4 into single query with joins
 
 ## Recommendations (MEDIUM)
 
-1. **Timezone bug** — `src/lib/date-utils.ts:3` uses server timezone (UTC on Vercel) not Jordan time. Records between midnight-3AM Jordan time attributed to wrong day. Fix: use `Asia/Amman` timezone explicitly.
-2. **No CSP header** — `next.config.ts:3-12` missing Content-Security-Policy
-3. **In-memory rate limiter ineffective on Vercel** — `src/lib/rate-limit.ts` uses Map, not shared across serverless invocations
-4. **getEmployeesAction accessible to employees** — `src/actions/employees.ts:147` only requires `requireAuth()`, should require HR/admin role
-5. **getLocationsAction exposes GPS to all users** — `src/actions/locations.ts:79-90` only requires `requireAuth()`
-6. **Input validation gaps** — `src/actions/attendance-stats.ts:113` no bounds on `days` param, `src/actions/hr-actions.ts:526` no Zod on filter params
-7. **Middleware uncertain** — `src/proxy.ts` exports `proxy` but no `middleware.ts` exists
-8. **ClockInButton 527 lines** — 8+ UI states in one component, should decompose
-9. **Duplicated formatTime** — 5 independent implementations across components
-10. **Duplicated requireHrOrAdmin** — defined in both `reports.ts` and `hr-actions.ts`
-11. **Reports tab no client caching** — refetches on every tab switch
-12. **getMyAttendanceAction unbounded** — `src/actions/attendance.ts:339-368` no `.limit()`
-13. **Summary table no pagination** — renders all employees in DOM at once
-14. **Live timer 1s interval re-renders entire component tree** — `src/components/attendance/attendance-status.tsx:23-51`
+1. **Timezone bug** — `src/lib/date-utils.ts:3` uses `new Date()` (UTC on Vercel) not Jordan time. Records between midnight-3AM Jordan time attributed to wrong day. Fix: use `Asia/Amman` timezone.
+2. **In-memory rate limiter ineffective on Vercel** — `src/lib/rate-limit.ts` uses Map, reset per serverless invocation. Fix: Upstash Redis or accept as dev-only.
+3. **Missing global-error.tsx** — no fallback if root layout crashes. Fix: create `src/app/global-error.tsx`.
+4. **5 routes missing loading.tsx** — profile, site-attendance, employees/[id], admin/users, auth group. Parent fallback exists but is generic.
+5. **20+ `as unknown as` type casts** — `src/actions/reports.ts` (8), `hr-actions.ts` (9), `attendance-stats.ts` (2). Fix: generate Supabase types and create typed query helpers.
+6. **Inconsistent error patterns** — auth actions return `{ error }`, all others throw. Fix: standardize on Result pattern.
+7. **Data files with PII in git** — `data/locations and Employees (1).xlsx` may contain employee info. Fix: `git rm --cached data/` + `.gitignore`.
+8. **getMyAttendanceAction unbounded** — `src/actions/attendance.ts:358-367` no `.limit()`. Fix: add `.limit(200)`.
+9. **getSiteComparisonReport 3 sequential queries** — `src/actions/reports.ts:462-533` all independent. Fix: `Promise.all`.
+10. **getAbsenceReport 2 sequential queries** — `src/actions/reports.ts:366-458`. Fix: `Promise.all`.
+11. **getAttendanceStatsAction not parallelized** — `src/actions/attendance-stats.ts:24-111`. Fix: `Promise.all` first two queries.
+12. **select("*") overuse** — `src/lib/auth/dal.ts:25` fetches all columns on every request via `requireAuth()`. Fix: specify needed columns.
 
 ## Recommendations (LOW)
 
-1. `clockOutAction` missing `employee_id` guard on final update — `src/actions/attendance.ts:266-281`
-2. Password policy minimal (only min 8 chars) — `src/lib/validations/auth.ts:5`
-3. Admin client creates new instance on every call — `src/lib/supabase/admin.ts` (not singleton)
-4. Realtime channel stays open when tab not visible — `src/components/notifications/notification-bell.tsx:51-79`
-5. Inline role checks in pages duplicate `requireRole` logic — reports, hr-actions, attendance pages
-6. Supervisor-attendance.tsx has ~330 lines of duplicate desktop/mobile rendering
-7. Seed credential comments in `.env.local.example` telegraph password patterns
-8. `isBusinessDay` hardcodes Friday as weekend — `src/actions/reports.ts:24`
+1. updatePasswordAction missing rate limiting — `src/actions/auth.ts:148`
+2. Password policy minimal (8 chars only) — `src/lib/validations/auth.ts:7`
+3. No auth error boundary — `src/app/(auth)/error.tsx` missing
+4. Unused exports — `haversineDistance`, `timeToMinutes`, `getShiftNetMinutes`, `getUser` exported but internal-only
+5. No list virtualization — employees-table.tsx renders all rows (fine under 200)
+6. Report summary no pagination — renders all employees in DOM
+7. Reports page console.error leaks to browser — `src/components/reports/reports-page.tsx:151`
+8. Live timer 1s re-render — `src/components/attendance/attendance-status.tsx:23-51`
 
 ## Positive Findings
 
-- All server actions use `"use server"` directive and auth checks
-- No `dangerouslySetInnerHTML`, `eval()`, or `innerHTML` anywhere
-- No `service_role` key in client components
-- `.env.local` properly gitignored, never committed
-- Auth callback prevents open redirect
+- All server actions use `"use server"` + auth checks — no unauthenticated mutations
+- Zero `dangerouslySetInnerHTML`, `eval()`, `innerHTML` — no XSS vectors
+- No `service_role` key in any client component — properly isolated
+- `.env.local` gitignored, never committed, no secrets in source
+- Auth callback prevents open redirect (validates `next` param)
 - Zod validation on all major action inputs
-- Zero npm vulnerabilities
-- Security headers configured (X-Frame-Options, HSTS, X-Content-Type-Options)
+- Zero npm vulnerabilities (838 packages)
+- Security headers configured (HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy)
+- Rate limiting on signup (5/min), login (10/min), password reset (3/min)
 - Clean unidirectional dependency graph: app → components → actions → lib
-- Bundle splitting well-handled (Leaflet, Recharts, ExcelJS all lazy-loaded)
-- Parallel queries already used in several key paths (employee dashboard, clock-in)
+- Bundle splitting correct (Leaflet, Recharts, ExcelJS all lazy-loaded)
+- Parallel queries used in key paths (clock-in, employee dashboard)
 - PostgREST filter injection prevented in search inputs
+- PWA offline architecture solid (IndexedDB + sync engine + conflict resolution)
+- Recharts -1 and Base UI #31 console errors now properly resolved
 
 ---
 *Review by: Security Auditor + Performance Oracle + Architecture Strategist (Opus 4.6)*
-*3 agents, ~675s total analysis time*
+*3 parallel agents, 2026-04-05*
+
+---
+
+# Previous Review — 2026-04-02
+
+(Archived — see git history for full content)
