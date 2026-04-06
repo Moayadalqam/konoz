@@ -2,7 +2,8 @@
 
 import { useActionState, useEffect } from "react";
 import { toast } from "sonner";
-import { Mail, Phone, Briefcase, Calendar, Shield } from "lucide-react";
+import { Mail, Phone, Briefcase, Calendar, Shield, LogOut } from "lucide-react";
+import { signOutAction } from "@/actions/auth";
 import type { Profile, AppRole } from "@/lib/auth/types";
 import {
   updateProfileAction,
@@ -194,6 +195,20 @@ export function ProfileView({ profile }: { profile: Profile }) {
           </form>
         </CardContent>
       </Card>
+
+      {/* Sign Out */}
+      <div className="mt-6">
+        <Button
+          variant="outline"
+          className="w-full text-destructive hover:bg-destructive/10 hover:text-destructive"
+          onClick={async () => {
+            await signOutAction();
+          }}
+        >
+          <LogOut className="size-4" />
+          Sign Out
+        </Button>
+      </div>
     </div>
   );
 }
