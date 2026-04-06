@@ -6,7 +6,7 @@ import { CheckCircle2 } from "lucide-react";
 import { getNotificationsAction, markNotificationReadAction, markAllReadAction } from "@/actions/notifications";
 import type { Notification } from "@/lib/validations/notifications";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { NotificationItem } from "./notification-item";
 
@@ -123,15 +123,13 @@ export function NotificationDropdown({
       {/* Footer */}
       {notifications.length > 0 && (
         <div className="border-t border-border px-4 py-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            className="w-full text-primary"
-            render={<Link href="/dashboard/notifications" />}
+          <Link
+            href="/dashboard/notifications"
+            className={buttonVariants({ variant: "ghost", size: "sm", className: "w-full text-primary" })}
             onClick={onClose}
           >
             View all
-          </Button>
+          </Link>
         </div>
       )}
     </div>
