@@ -147,6 +147,7 @@ export async function linkEmployeeProfileAction(
 }
 
 export async function getEmployeesAction(filters?: EmployeeFilters) {
+  await requireRole("admin", "hr_officer", "supervisor");
   const supabase = await createClient();
 
   let query = supabase
@@ -176,6 +177,7 @@ export async function getEmployeesAction(filters?: EmployeeFilters) {
 }
 
 export async function getEmployeeAction(id: string) {
+  await requireRole("admin", "hr_officer", "supervisor");
   const supabase = await createClient();
 
   const { data, error } = await supabase

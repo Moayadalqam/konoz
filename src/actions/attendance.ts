@@ -130,9 +130,10 @@ export async function clockInAction(data: ClockInInput) {
   if (parsed.data.photo_base64) {
     const base64 = parsed.data.photo_base64;
     const match = base64.match(/^data:(image\/\w+);base64,(.+)$/);
-    if (match) {
+    const ALLOWED_MIMES = ["image/jpeg", "image/png", "image/webp"];
+    if (match && ALLOWED_MIMES.includes(match[1])) {
       const mimeType = match[1];
-      const ext = mimeType.split("/")[1] === "png" ? "png" : "jpg";
+      const ext = mimeType === "image/png" ? "png" : mimeType === "image/webp" ? "webp" : "jpg";
       const buffer = Buffer.from(match[2], "base64");
       const filePath = `${employee.id}/${Date.now()}.${ext}`;
 

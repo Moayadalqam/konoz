@@ -121,11 +121,25 @@ export async function batchClockInAction(data: BatchClockInInput) {
 
   const now = new Date().toISOString();
 
-  // Resolve shifts for all eligible employees
+  // Resolve shifts for all eligible employees in bulk (avoid N+1)
   const shiftMap = new Map<string, Shift | null>();
-  for (const employeeId of eligibleIds) {
-    const shift = await resolveEmployeeShift(supabase, employeeId);
-    shiftMap.set(employeeId, shift);
+  const { data: allAssignments } = await supabase
+    .from("shift_assignments")
+    .select("employee_id, shift_id")
+    .in("employee_id", eligibleIds)
+    .is("effective_to", null);
+
+  if (allAssignments && allAssignments.length > 0) {
+    const uniqueShiftIds = [...new Set(allAssignments.map((a) => a.shift_id))];
+    const { data: shifts } = await supabase
+      .from("shifts")
+      .select("*")
+      .in("id", uniqueShiftIds);
+
+    const shiftLookup = new Map((shifts ?? []).map((s) => [s.id, s as Shift]));
+    for (const a of allAssignments) {
+      if (a.employee_id) shiftMap.set(a.employee_id, shiftLookup.get(a.shift_id) ?? null);
+    }
   }
 
   const records = eligibleIds.map((employeeId) => {
@@ -204,27 +218,34 @@ export async function batchClockOutAction(employeeIds: string[]) {
     throw new Error("No open clock-in records found for selected employees");
   }
 
+  // Fetch all referenced shifts in one query (avoid N+1)
+  const uniqueShiftIds = [...new Set(openRecords.filter((r) => r.shift_id).map((r) => r.shift_id!))];
+  const shiftLookup = new Map<string, Shift>();
+  if (uniqueShiftIds.length > 0) {
+    const { data: shifts } = await supabase
+      .from("shifts")
+      .select("*")
+      .in("id", uniqueShiftIds);
+    for (const s of shifts ?? []) {
+      shiftLookup.set(s.id, s as Shift);
+    }
+  }
+
   for (const record of openRecords) {
     const clockInTime = new Date(record.clock_in);
     const totalMinutes = Math.round(
       (now.getTime() - clockInTime.getTime()) / 60000
     );
 
-    // Evaluate shift status on clock-out (late, early departure, overtime)
     let status: string = "present";
     let isOvertime = false;
     let overtimeMinutes = 0;
 
     if (record.shift_id) {
-      const { data: shift } = await supabase
-        .from("shifts")
-        .select("*")
-        .eq("id", record.shift_id)
-        .single();
-
+      const shift = shiftLookup.get(record.shift_id);
       if (shift) {
         const shiftResult = computeShiftStatus({
-          shift: shift as Shift,
+          shift,
           clockIn: clockInTime,
           clockOut: now,
         });

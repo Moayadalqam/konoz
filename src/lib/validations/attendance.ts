@@ -81,7 +81,7 @@ export const clockInSchema = z.object({
   latitude: z.number().min(-90).max(90),
   longitude: z.number().min(-180).max(180),
   accuracy: z.number().min(0).optional(),
-  photo_base64: z.string().optional(),
+  photo_base64: z.string().max(5_000_000, "Photo too large (max ~3.5MB)").optional(),
 });
 
 export type ClockInInput = z.infer<typeof clockInSchema>;
