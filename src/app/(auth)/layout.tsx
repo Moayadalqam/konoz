@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
+import { LoginSlideshow } from "@/components/auth/login-slideshow";
 
 export const metadata: Metadata = {
   title: "Kunoz — Sign In",
@@ -12,12 +13,12 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="relative flex min-h-dvh flex-col bg-background">
-      {/* Crimson top accent bar */}
-      <div className="h-1 w-full bg-primary" />
+    <div className="relative flex min-h-dvh">
+      {/* Slideshow background — full page */}
+      <LoginSlideshow />
 
       {/* Content layer */}
-      <div className="flex flex-1 flex-col items-center justify-center px-4 py-12 sm:px-6">
+      <div className="relative z-10 flex min-h-dvh w-full flex-col items-center justify-center px-4 py-12 sm:px-6">
         {/* Logo + brand */}
         <div className="mb-10 flex flex-col items-center gap-4">
           <Image
@@ -26,13 +27,21 @@ export default function AuthLayout({
             width={80}
             height={96}
             priority
-            className="w-auto h-auto"
+            className="drop-shadow-lg w-auto h-auto"
           />
           <div className="flex flex-col items-center gap-1">
-            <h1 className="font-heading text-2xl font-semibold tracking-[0.15em] text-primary">
+            <h1
+              className="font-heading text-2xl font-semibold tracking-[0.15em]"
+              style={{
+                background:
+                  "linear-gradient(135deg, #D4A843 0%, #F0D68A 50%, #D4A843 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+              }}
+            >
               KUNOZ
             </h1>
-            <p className="text-xs tracking-widest uppercase text-muted-foreground">
+            <p className="text-xs tracking-widest uppercase text-white/50">
               Workforce Management
             </p>
           </div>
