@@ -1,0 +1,1168 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Kunoz - Demo Walkthrough Guide</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    /* ========================================
+       KUNOZ DEMO GUIDE — Design Tokens
+       ======================================== */
+    :root {
+      --crimson: #B8163A;
+      --crimson-dark: #8E1130;
+      --crimson-light: #D42A50;
+      --gold: #D4A843;
+      --gold-light: #E8C96E;
+      --gold-muted: #D4A84330;
+      --ink: #1A0F0F;
+      --ink-soft: #3D2B2B;
+      --text-secondary: #6B5555;
+      --surface: #FBF7F4;
+      --surface-warm: #F5EDE6;
+      --surface-card: #FFFFFF;
+      --border-light: #E8DDD4;
+      --border-subtle: #F0E8E0;
+      --shadow-sm: 0 1px 3px rgba(26, 15, 15, 0.06);
+      --shadow-md: 0 4px 16px rgba(26, 15, 15, 0.08);
+      --shadow-lg: 0 8px 32px rgba(26, 15, 15, 0.1);
+      --shadow-glow: 0 0 0 1px var(--border-light), 0 4px 20px rgba(184, 22, 58, 0.06);
+      --radius: 10px;
+      --radius-lg: 16px;
+      --radius-xl: 24px;
+    }
+
+    /* ========================================
+       RESET & BASE
+       ======================================== */
+    *, *::before, *::after {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+      -webkit-text-size-adjust: 100%;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--ink);
+      background: var(--surface);
+      line-height: 1.7;
+      font-size: clamp(0.95rem, 0.4vw + 0.85rem, 1.05rem);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* ========================================
+       PRINT STYLES
+       ======================================== */
+    @media print {
+      body {
+        background: white;
+        font-size: 11pt;
+        line-height: 1.5;
+        color: #000;
+      }
+
+      .hero {
+        background: white !important;
+        padding: 2rem 0 !important;
+        min-height: auto !important;
+      }
+
+      .hero::before, .hero::after, .hero-pattern {
+        display: none !important;
+      }
+
+      .hero-brand, .hero h1, .hero-url, .hero-tagline {
+        color: #000 !important;
+      }
+
+      .cta-button, .floating-cta {
+        display: none !important;
+      }
+
+      .section {
+        padding: 1.5rem 0 !important;
+        page-break-inside: avoid;
+      }
+
+      .step-card {
+        box-shadow: none !important;
+        border: 1px solid #ccc !important;
+        page-break-inside: avoid;
+      }
+
+      .step-number {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      .features-grid {
+        grid-template-columns: 1fr 1fr !important;
+      }
+
+      footer {
+        page-break-before: avoid;
+      }
+    }
+
+    /* ========================================
+       LAYOUT
+       ======================================== */
+    .page-wrapper {
+      width: 100%;
+      max-width: 100%;
+      overflow-x: hidden;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 clamp(1.25rem, 5vw, 3rem);
+    }
+
+    /* ========================================
+       HERO
+       ======================================== */
+    .hero {
+      position: relative;
+      background: linear-gradient(165deg, var(--crimson-dark) 0%, var(--crimson) 45%, var(--crimson-light) 100%);
+      padding: clamp(3rem, 8vw, 5rem) 0 clamp(3.5rem, 10vw, 6rem);
+      overflow: hidden;
+      min-height: 420px;
+      display: flex;
+      align-items: center;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background:
+        radial-gradient(ellipse 80% 50% at 20% 80%, rgba(212, 168, 67, 0.15) 0%, transparent 70%),
+        radial-gradient(ellipse 60% 40% at 80% 20%, rgba(255, 255, 255, 0.06) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .hero-pattern {
+      position: absolute;
+      inset: 0;
+      opacity: 0.035;
+      background-image:
+        repeating-linear-gradient(
+          45deg,
+          transparent,
+          transparent 40px,
+          rgba(255, 255, 255, 0.5) 40px,
+          rgba(255, 255, 255, 0.5) 41px
+        );
+      pointer-events: none;
+    }
+
+    .hero .container {
+      position: relative;
+      z-index: 1;
+      text-align: center;
+    }
+
+    .hero-brand {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: clamp(2.8rem, 6vw + 1rem, 4.2rem);
+      font-weight: 800;
+      color: #FFFFFF;
+      letter-spacing: 0.18em;
+      margin-bottom: 0.15em;
+      text-shadow: 0 2px 20px rgba(0, 0, 0, 0.15);
+    }
+
+    .hero-brand-accent {
+      display: block;
+      width: 60px;
+      height: 3px;
+      background: var(--gold);
+      margin: 0 auto 1.2rem;
+      border-radius: 2px;
+    }
+
+    .hero h1 {
+      font-family: 'Inter', sans-serif;
+      font-size: clamp(1rem, 2vw + 0.5rem, 1.35rem);
+      font-weight: 400;
+      color: rgba(255, 255, 255, 0.88);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 1.5rem;
+    }
+
+    .hero-url {
+      display: inline-block;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: rgba(255, 255, 255, 0.7);
+      letter-spacing: 0.04em;
+      padding: 0.5rem 1.25rem;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 100px;
+      margin-bottom: 2rem;
+      text-decoration: none;
+      transition: all 0.3s ease;
+    }
+
+    .hero-url:hover {
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.45);
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .cta-button {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-family: 'Inter', sans-serif;
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--crimson-dark);
+      background: var(--gold);
+      padding: 0.9rem 2.2rem;
+      border-radius: 100px;
+      text-decoration: none;
+      letter-spacing: 0.02em;
+      transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 20px rgba(212, 168, 67, 0.3);
+    }
+
+    .cta-button:hover {
+      background: var(--gold-light);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 28px rgba(212, 168, 67, 0.4);
+    }
+
+    .cta-button .arrow {
+      transition: transform 0.3s ease;
+    }
+
+    .cta-button:hover .arrow {
+      transform: translateX(3px);
+    }
+
+    /* ========================================
+       SECTIONS
+       ======================================== */
+    .section {
+      padding: clamp(3rem, 8vw, 5rem) 0;
+    }
+
+    .section:nth-child(even) {
+      background: var(--surface-warm);
+    }
+
+    .section-header {
+      margin-bottom: clamp(2rem, 4vw, 3rem);
+    }
+
+    .section-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: 'Inter', sans-serif;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--crimson);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 0.75rem;
+    }
+
+    .section-label-arabic {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      font-weight: 400;
+      letter-spacing: 0;
+      direction: rtl;
+    }
+
+    .section-title {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: clamp(1.6rem, 3vw + 0.5rem, 2.2rem);
+      font-weight: 700;
+      color: var(--ink);
+      line-height: 1.25;
+      margin-bottom: 0.3em;
+    }
+
+    .section-title-underline {
+      display: block;
+      width: 48px;
+      height: 3px;
+      background: linear-gradient(90deg, var(--gold) 0%, var(--gold-light) 100%);
+      border-radius: 2px;
+      margin-top: 0.75rem;
+    }
+
+    .section-subtitle {
+      font-size: 1rem;
+      color: var(--text-secondary);
+      margin-top: 0.75rem;
+      max-width: 540px;
+    }
+
+    /* ========================================
+       STEP CARDS
+       ======================================== */
+    .steps-list {
+      display: flex;
+      flex-direction: column;
+      gap: clamp(0.9rem, 2vw, 1.2rem);
+    }
+
+    .step-card {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: clamp(1rem, 3vw, 1.5rem);
+      align-items: start;
+      background: var(--surface-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: clamp(1.1rem, 3vw, 1.5rem);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .step-card:hover {
+      border-color: var(--border-light);
+      box-shadow: var(--shadow-glow);
+      transform: translateY(-1px);
+    }
+
+    .step-number {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 38px;
+      height: 38px;
+      min-width: 38px;
+      background: var(--crimson);
+      color: #fff;
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 1rem;
+      font-weight: 700;
+      border-radius: 50%;
+      margin-top: 2px;
+      box-shadow: 0 2px 8px rgba(184, 22, 58, 0.2);
+    }
+
+    .step-content h3 {
+      font-family: 'Inter', sans-serif;
+      font-size: clamp(0.95rem, 0.3vw + 0.9rem, 1.05rem);
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 0.35rem;
+      line-height: 1.35;
+    }
+
+    .step-content p {
+      font-size: clamp(0.875rem, 0.2vw + 0.82rem, 0.95rem);
+      color: var(--text-secondary);
+      line-height: 1.65;
+    }
+
+    .step-content code {
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 0.82em;
+      background: var(--surface-warm);
+      color: var(--crimson);
+      padding: 0.15em 0.45em;
+      border-radius: 5px;
+      border: 1px solid var(--border-light);
+      word-break: break-all;
+    }
+
+    .step-content .step-path {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3em;
+      font-size: 0.82em;
+      color: var(--text-secondary);
+      background: var(--surface-warm);
+      padding: 0.2em 0.55em;
+      border-radius: 5px;
+      border: 1px solid var(--border-light);
+      margin-top: 0.35rem;
+    }
+
+    .step-content .step-path .path-sep {
+      color: var(--gold);
+      font-weight: 600;
+    }
+
+    /* ========================================
+       FEATURES GRID
+       ======================================== */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
+      gap: clamp(0.9rem, 2vw, 1.2rem);
+    }
+
+    .feature-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      padding: clamp(1rem, 2.5vw, 1.4rem);
+      background: var(--surface-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius);
+      transition: all 0.3s ease;
+    }
+
+    .feature-item:hover {
+      border-color: var(--border-light);
+      box-shadow: var(--shadow-md);
+    }
+
+    .feature-emoji {
+      font-size: 1.5rem;
+      flex-shrink: 0;
+      width: 2.2rem;
+      text-align: center;
+      line-height: 1.4;
+    }
+
+    .feature-text h3 {
+      font-family: 'Inter', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: var(--ink);
+      margin-bottom: 0.2rem;
+    }
+
+    .feature-text p {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    /* ========================================
+       TEST ACCOUNTS TABLE
+       ======================================== */
+    .accounts-table-wrap {
+      background: var(--surface-card);
+      border: 1px solid var(--border-light);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .accounts-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: clamp(0.875rem, 0.2vw + 0.82rem, 0.95rem);
+    }
+
+    .accounts-table thead {
+      background: linear-gradient(135deg, var(--crimson-dark) 0%, var(--crimson) 100%);
+    }
+
+    .accounts-table thead th {
+      font-family: 'Inter', sans-serif;
+      font-weight: 600;
+      font-size: 0.8rem;
+      color: #fff;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      padding: 1rem 1.25rem;
+      text-align: left;
+    }
+
+    .accounts-table tbody td {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border-subtle);
+      vertical-align: middle;
+    }
+
+    .accounts-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+
+    .accounts-table tbody tr:hover {
+      background: var(--surface-warm);
+    }
+
+    .accounts-table .role-badge {
+      display: inline-block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      padding: 0.3em 0.8em;
+      border-radius: 100px;
+    }
+
+    .role-admin {
+      background: var(--gold-muted);
+      color: #8B7128;
+    }
+
+    .role-employee {
+      background: rgba(184, 22, 58, 0.08);
+      color: var(--crimson);
+    }
+
+    .accounts-table .credential {
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 0.82em;
+      color: var(--ink-soft);
+      background: var(--surface);
+      padding: 0.25em 0.5em;
+      border-radius: 5px;
+      border: 1px solid var(--border-light);
+      cursor: pointer;
+      transition: all 0.2s ease;
+      user-select: all;
+    }
+
+    .accounts-table .credential:hover {
+      background: var(--gold-muted);
+      border-color: var(--gold);
+    }
+
+    .copy-hint {
+      display: block;
+      text-align: center;
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      padding: 0.65rem 1rem;
+      background: var(--surface);
+      border-top: 1px solid var(--border-subtle);
+      letter-spacing: 0.02em;
+    }
+
+    /* ========================================
+       FOOTER
+       ======================================== */
+    footer {
+      background: var(--ink);
+      color: rgba(255, 255, 255, 0.55);
+      padding: clamp(2.5rem, 6vw, 4rem) 0;
+      text-align: center;
+    }
+
+    footer .container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.2rem;
+    }
+
+    .footer-brand {
+      font-family: 'Playfair Display', Georgia, serif;
+      font-size: 1.2rem;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.8);
+      letter-spacing: 0.15em;
+    }
+
+    .footer-divider {
+      width: 40px;
+      height: 2px;
+      background: var(--gold);
+      opacity: 0.5;
+      border-radius: 2px;
+    }
+
+    .footer-text {
+      font-size: 0.85rem;
+      line-height: 1.7;
+    }
+
+    .footer-text a {
+      color: var(--gold);
+      text-decoration: none;
+      transition: color 0.2s ease;
+    }
+
+    .footer-text a:hover {
+      color: var(--gold-light);
+    }
+
+    .footer-cta {
+      margin-top: 0.5rem;
+    }
+
+    .footer-cta .cta-button {
+      font-size: 0.9rem;
+      padding: 0.75rem 1.8rem;
+    }
+
+    /* ========================================
+       FLOATING CTA (mobile)
+       ======================================== */
+    .floating-cta {
+      display: none;
+    }
+
+    @media (max-width: 768px) {
+      .floating-cta {
+        display: flex;
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        z-index: 100;
+        padding: 0.75rem 1rem;
+        padding-bottom: calc(0.75rem + env(safe-area-inset-bottom, 0));
+        background: linear-gradient(to top, var(--ink) 60%, transparent);
+        justify-content: center;
+      }
+
+      .floating-cta .cta-button {
+        width: 100%;
+        max-width: 360px;
+        justify-content: center;
+        font-size: 0.95rem;
+        padding: 0.85rem 1.5rem;
+      }
+
+      body {
+        padding-bottom: 5rem;
+      }
+    }
+
+    /* ========================================
+       MOBILE RESPONSIVE TABLE
+       ======================================== */
+    @media (max-width: 520px) {
+      .accounts-table thead {
+        display: none;
+      }
+
+      .accounts-table tbody tr {
+        display: block;
+        padding: 1rem 1.25rem;
+        border-bottom: 1px solid var(--border-subtle);
+      }
+
+      .accounts-table tbody tr:last-child {
+        border-bottom: none;
+      }
+
+      .accounts-table tbody td {
+        display: flex;
+        align-items: center;
+        gap: 0.6rem;
+        padding: 0.35rem 0;
+        border: none;
+      }
+
+      .accounts-table tbody td::before {
+        content: attr(data-label);
+        font-size: 0.72rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--text-secondary);
+        min-width: 70px;
+        flex-shrink: 0;
+      }
+    }
+
+    /* ========================================
+       ENTRANCE ANIMATIONS
+       ======================================== */
+    @media (prefers-reduced-motion: no-preference) {
+      .animate-in {
+        opacity: 0;
+        transform: translateY(18px);
+        animation: fadeSlideIn 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+
+      .step-card { animation-delay: calc(var(--i, 0) * 0.06s); }
+
+      @keyframes fadeSlideIn {
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    }
+
+    /* ========================================
+       SELECTION STYLE
+       ======================================== */
+    ::selection {
+      background: rgba(184, 22, 58, 0.15);
+      color: var(--ink);
+    }
+
+    /* ========================================
+       TOOLTIP for copy
+       ======================================== */
+    .credential-wrap {
+      position: relative;
+      display: inline-block;
+    }
+
+    .copied-toast {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(10px);
+      background: var(--ink);
+      color: #fff;
+      font-size: 0.82rem;
+      font-weight: 500;
+      padding: 0.6rem 1.2rem;
+      border-radius: 100px;
+      box-shadow: var(--shadow-lg);
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 200;
+    }
+
+    .copied-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ============================
+       HERO
+       ============================ -->
+  <header class="hero">
+    <div class="hero-pattern"></div>
+    <div class="container">
+      <div class="hero-brand">KUNOZ</div>
+      <span class="hero-brand-accent"></span>
+      <h1>Demo Walkthrough Guide</h1>
+      <a href="https://kunoz.vercel.app" class="hero-url" target="_blank" rel="noopener">kunoz.vercel.app</a>
+      <br>
+      <a href="https://kunoz.vercel.app" class="cta-button" target="_blank" rel="noopener">
+        Try it now <span class="arrow">&rarr;</span>
+      </a>
+    </div>
+  </header>
+
+  <!-- ============================
+       SECTION 1: EMPLOYEE
+       ============================ -->
+  <section class="section">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-label">
+          Section 1
+          <span class="section-label-arabic">&mdash; &#1575;&#1604;&#1605;&#1608;&#1592;&#1601;</span>
+        </div>
+        <h2 class="section-title">Employee Experience</h2>
+        <span class="section-title-underline"></span>
+        <p class="section-subtitle">Walk through the daily attendance flow from an employee's perspective.</p>
+      </div>
+
+      <div class="steps-list">
+
+        <div class="step-card animate-in" style="--i:0">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h3>Open the app</h3>
+            <p>Go to <strong>kunoz.vercel.app</strong> on your phone or desktop browser.</p>
+          </div>
+        </div>
+
+        <div class="step-card animate-in" style="--i:1">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h3>Log in as Employee</h3>
+            <p>Use the test credentials:</p>
+            <p style="margin-top:0.35rem">
+              Email: <code>employeee@kunoz.sa</code><br>
+              Password: <code>KunozAdmin2026!</code>
+            </p>
+          </div>
+        </div>
+
+        <div class="step-card animate-in" style="--i:2">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <h3>View your dashboard</h3>
+            <p>You'll see your attendance status for today, weekly stats, and upcoming shifts at a glance.</p>
+          </div>
+        </div>
+
+        <div class="step-card animate-in" style="--i:3">
+          <div class="step-number">4</div>
+          <div class="step-content">
+            <h3>Clock In</h3>
+            <p>Tap <strong>"My Attendance"</strong> in the sidebar, then tap <strong>"Clock In"</strong>. Allow GPS location access and take a selfie photo to verify your identity.</p>
+            <div class="step-path">
+              Sidebar <span class="path-sep">&rsaquo;</span>
+              My Attendance <span class="path-sep">&rsaquo;</span>
+              Clock In
+            </div>
+          </div>
+        </div>
+
+        <div class="step-card animate-in" style="--i:4">
+          <div class="step-number">5</div>
+          <div class="step-content">
+            <h3>See confirmation</h3>
+            <p>A green checkmark confirms your clock-in with your location name and timestamp.</p>
+          </div>
+        </div>
+
+        <div class="step-card animate-in" style="--i:5">
+          <div class="step-number">6</div>
+          <div class="step-content">
+            <h3>Clock Out</h3>
+            <p>When your shift is done, tap <strong>"Clock Out"</strong> from the same My Attendance page.</p>
+          </div>
+        </div>
+
+        <div class="step-card animate-in" style="--i:6">
+          <div class="step-number">7</div>
+          <div class="step-content">
+            <h3>View history</h3>
+            <p>Scroll down on the attendance page to see your full attendance records and working hours.</p>
+          </div>
+        </div>
+
+        <div class="step-card animate-in" style="--i:7">
+          <div class="step-number">8</div>
+          <div class="step-content">
+            <h3>Sign out</h3>
+            <p>Go to <strong>Profile</strong> (bottom nav on mobile) and tap <strong>"Sign Out"</strong> to switch to the admin account.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================
+       SECTION 2: HR/ADMIN
+       ============================ -->
+  <section class="section">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-label">
+          Section 2
+          <span class="section-label-arabic">&mdash; &#1605;&#1587;&#1572;&#1608;&#1604; &#1575;&#1604;&#1605;&#1608;&#1575;&#1585;&#1583; &#1575;&#1604;&#1576;&#1588;&#1585;&#1610;&#1577;</span>
+        </div>
+        <h2 class="section-title">HR / Admin Experience</h2>
+        <span class="section-title-underline"></span>
+        <p class="section-subtitle">Explore the full management dashboard with real data from 70 employees across 8 locations.</p>
+      </div>
+
+      <div class="steps-list">
+
+        <div class="step-card animate-in" style="--i:0">
+          <div class="step-number">1</div>
+          <div class="step-content">
+            <h3>Log in as Admin</h3>
+            <p>Use the admin credentials:</p>
+            <p style="margin-top:0.35rem">
+              Email: <code>admin@kunoz.sa</code><br>
+              Password: <code>KunozAdmin2026!</code>
+            </p>
+          </div>
+        </div>
+
+        <div class="step-card animate-in" style="--i:1">
+          <div class="step-number">2</div>
+          <div class="step-content">
+            <h3>Dashboard overview</h3>
+            <p>See the hero stats at the top: <strong>Present / Absent</strong> counts, total employees, and late arrivals for today.</p>
+          </div>
+        </div>
+
+        <div class="step-card animate-in" style="--i:2">
+          <div class="step-number">3</div>
+          <div class="step-content">
+            <h3>View Employees</h3>
+            <p>Browse 70 real employees. Filter by location, search by name, and view individual profiles.</p>
+            <div class="step-path">
+              Sidebar <span class="path-sep">&rsaquo;</span>
+              Employees <span class="path-sep">&rsaquo;</span>
+              Employee List
+            </div>
+          </div>
+        </div>
+
+        <div class="step-card animate-in" style="--i:3">
+          <div class="step-number">4</div>
+          <div class="step-content">
+            <h3>View Locations</h3>
+            <p>See all 8 locations plotted on an interactive map with geofence circles showing the allowed check-in radius.</p>
+            <div class="step-path">
+              Sidebar <span class="path-sep">&rsaquo;</span>
+              Locations
+            </div>
+          </div>
+        </div>
+
+        <div class="step-card animate-in" style="--i:4">
+          <div class="step-number">5</div>
+          <div class="step-content">
+            <h3>Manage Shifts</h3>
+            <p>View shift templates (Morning, Evening, Night) and see which shifts are assigned to which locations.</p>
+            <div class="step-path">
+              Sidebar <span class="path-sep">&rsaquo;</span>
+              Employees <span class="path-sep">&rsaquo;</span>
+              Shifts
+            </div>
+          </div>
+        </div>
+
+        <div class="step-card animate-in" style="--i:5">
+          <div class="step-number">6</div>
+          <div class="step-content">
+            <h3>Check Reports</h3>
+            <p>Explore 6 report types with interactive charts. Filter by date range and location. Export any report to Excel.</p>
+            <div class="step-path">
+              Sidebar <span class="path-sep">&rsaquo;</span>
+              Reports
+            </div>
+          </div>
+        </div>
+
+        <div class="step-card animate-in" style="--i:6">
+          <div class="step-number">7</div>
+          <div class="step-content">
+            <h3>HR Actions</h3>
+            <p>Correct attendance records, approve overtime requests, and issue warnings when needed.</p>
+            <div class="step-path">
+              Sidebar <span class="path-sep">&rsaquo;</span>
+              Employees <span class="path-sep">&rsaquo;</span>
+              HR Actions
+            </div>
+          </div>
+        </div>
+
+        <div class="step-card animate-in" style="--i:7">
+          <div class="step-number">8</div>
+          <div class="step-content">
+            <h3>Notifications</h3>
+            <p>Tap the <strong>bell icon</strong> (top right) to see real-time alerts for late arrivals, geofence violations, and system events.</p>
+          </div>
+        </div>
+
+        <div class="step-card animate-in" style="--i:8">
+          <div class="step-number">9</div>
+          <div class="step-content">
+            <h3>User Management</h3>
+            <p>Approve new employee registrations, assign roles (Admin, Supervisor, Employee), and manage access control.</p>
+            <div class="step-path">
+              Sidebar <span class="path-sep">&rsaquo;</span>
+              User Management
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================
+       SECTION 3: KEY FEATURES
+       ============================ -->
+  <section class="section">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-label">Section 3</div>
+        <h2 class="section-title">Key Features to Notice</h2>
+        <span class="section-title-underline"></span>
+      </div>
+
+      <div class="features-grid">
+
+        <div class="feature-item animate-in" style="--i:0">
+          <div class="feature-emoji">&#128241;</div>
+          <div class="feature-text">
+            <h3>Works on mobile</h3>
+            <p>Add to home screen for a native app-like experience. No app store needed.</p>
+          </div>
+        </div>
+
+        <div class="feature-item animate-in" style="--i:1">
+          <div class="feature-emoji">&#128205;</div>
+          <div class="feature-text">
+            <h3>GPS geofencing</h3>
+            <p>Employees must be physically present at their assigned location to clock in.</p>
+          </div>
+        </div>
+
+        <div class="feature-item animate-in" style="--i:2">
+          <div class="feature-emoji">&#128248;</div>
+          <div class="feature-text">
+            <h3>Photo verification</h3>
+            <p>A selfie is required at clock-in to prevent buddy punching and confirm identity.</p>
+          </div>
+        </div>
+
+        <div class="feature-item animate-in" style="--i:3">
+          <div class="feature-emoji">&#128260;</div>
+          <div class="feature-text">
+            <h3>Offline mode</h3>
+            <p>Works without internet. Records sync automatically when connection is restored.</p>
+          </div>
+        </div>
+
+        <div class="feature-item animate-in" style="--i:4">
+          <div class="feature-emoji">&#128202;</div>
+          <div class="feature-text">
+            <h3>Excel export</h3>
+            <p>Download any report as a .xlsx spreadsheet for payroll or compliance.</p>
+          </div>
+        </div>
+
+        <div class="feature-item animate-in" style="--i:5">
+          <div class="feature-emoji">&#128276;</div>
+          <div class="feature-text">
+            <h3>Real-time notifications</h3>
+            <p>Alerts for late arrivals, missed clock-outs, and geofence violations appear instantly.</p>
+          </div>
+        </div>
+
+        <div class="feature-item animate-in" style="--i:6">
+          <div class="feature-emoji">&#128101;</div>
+          <div class="feature-text">
+            <h3>Bulk check-in</h3>
+            <p>Supervisors can clock in workers who do not have access to a personal phone.</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================
+       SECTION 4: TEST ACCOUNTS
+       ============================ -->
+  <section class="section">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-label">Section 4</div>
+        <h2 class="section-title">Test Accounts</h2>
+        <span class="section-title-underline"></span>
+        <p class="section-subtitle">Use these credentials to explore the demo. Tap any value to copy it.</p>
+      </div>
+
+      <div class="accounts-table-wrap">
+        <table class="accounts-table">
+          <thead>
+            <tr>
+              <th>Role</th>
+              <th>Email</th>
+              <th>Password</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td data-label="Role"><span class="role-badge role-admin">Admin</span></td>
+              <td data-label="Email"><span class="credential" onclick="copyText(this)" title="Tap to copy">admin@kunoz.sa</span></td>
+              <td data-label="Password"><span class="credential" onclick="copyText(this)" title="Tap to copy">KunozAdmin2026!</span></td>
+            </tr>
+            <tr>
+              <td data-label="Role"><span class="role-badge role-employee">Employee</span></td>
+              <td data-label="Email"><span class="credential" onclick="copyText(this)" title="Tap to copy">employeee@kunoz.sa</span></td>
+              <td data-label="Password"><span class="credential" onclick="copyText(this)" title="Tap to copy">KunozAdmin2026!</span></td>
+            </tr>
+          </tbody>
+        </table>
+        <div class="copy-hint">Tap any credential to copy to clipboard</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================
+       FOOTER
+       ============================ -->
+  <footer>
+    <div class="container">
+      <div class="footer-brand">KUNOZ</div>
+      <div class="footer-divider"></div>
+      <div class="footer-text">
+        Built by <a href="#">Qualia Solutions</a><br>
+        Questions? <a href="mailto:info@qualia.solutions">Contact us</a>
+      </div>
+      <div class="footer-cta">
+        <a href="https://kunoz.vercel.app" class="cta-button" target="_blank" rel="noopener">
+          Try it now <span class="arrow">&rarr;</span>
+        </a>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Floating CTA for mobile -->
+  <div class="floating-cta">
+    <a href="https://kunoz.vercel.app" class="cta-button" target="_blank" rel="noopener">
+      Try it now <span class="arrow">&rarr;</span>
+    </a>
+  </div>
+
+  <!-- Copy toast -->
+  <div class="copied-toast" id="copiedToast">Copied to clipboard</div>
+
+  <!-- ============================
+       SCRIPTS
+       ============================ -->
+  <script>
+    // Copy to clipboard
+    function copyText(el) {
+      const text = el.textContent.trim();
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(showToast).catch(fallbackCopy);
+      } else {
+        fallbackCopy();
+      }
+
+      function fallbackCopy() {
+        const ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); showToast(); } catch(e) {}
+        document.body.removeChild(ta);
+      }
+    }
+
+    function showToast() {
+      const toast = document.getElementById('copiedToast');
+      toast.classList.add('show');
+      clearTimeout(toast._timer);
+      toast._timer = setTimeout(function() {
+        toast.classList.remove('show');
+      }, 1800);
+    }
+
+    // Intersection Observer for scroll animations
+    if ('IntersectionObserver' in window && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      const observer = new IntersectionObserver(function(entries) {
+        entries.forEach(function(entry) {
+          if (entry.isIntersecting) {
+            entry.target.style.animationPlayState = 'running';
+            observer.unobserve(entry.target);
+          }
+        });
+      }, { threshold: 0.15, rootMargin: '0px 0px -40px 0px' });
+
+      document.querySelectorAll('.animate-in').forEach(function(el) {
+        el.style.animationPlayState = 'paused';
+        observer.observe(el);
+      });
+    }
+  </script>
+
+</body>
+</html>
