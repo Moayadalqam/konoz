@@ -14,19 +14,9 @@ function SubmitButton() {
     <button
       type="submit"
       disabled={pending}
-      className="group relative w-full h-11 rounded-lg font-medium text-sm tracking-wide uppercase overflow-hidden transition-all duration-300 disabled:opacity-50"
-      style={{
-        background: "linear-gradient(135deg, #B8163A 0%, #8B1030 100%)",
-        color: "#fff",
-      }}
+      className="w-full h-11 rounded-lg bg-primary text-primary-foreground font-medium text-sm tracking-wide uppercase transition-colors duration-200 hover:bg-primary/90 disabled:opacity-50"
     >
-      {/* Gold shimmer on hover */}
-      <span className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500" style={{
-        background: "linear-gradient(135deg, #B8163A 0%, #C92040 40%, #B8163A 100%)",
-      }} />
-      <span className="relative">
-        {pending ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : "Sign In"}
-      </span>
+      {pending ? <Loader2 className="h-4 w-4 animate-spin mx-auto" /> : "Sign In"}
     </button>
   );
 }
@@ -42,13 +32,13 @@ function PasswordInput() {
         placeholder="Enter your password"
         autoComplete="current-password"
         required
-        className="w-full h-11 rounded-lg border border-white/10 bg-white/5 px-4 pr-10 text-sm text-white placeholder:text-white/30 focus:border-[#D4A843]/50 focus:outline-none focus:ring-1 focus:ring-[#D4A843]/30 transition-colors backdrop-blur-sm"
+        className="w-full h-11 rounded-lg border border-border bg-background px-4 pr-10 text-sm text-foreground placeholder:text-muted-foreground/60 focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/30 transition-colors"
       />
       <button
         type="button"
         tabIndex={-1}
         onClick={() => setVisible((v) => !v)}
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
         aria-label={visible ? "Hide password" : "Show password"}
       >
         {visible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -71,7 +61,7 @@ function ErrorBanner({ searchParams }: { searchParams: URLSearchParams }) {
   const message = messages[errorParam] ?? "An authentication error occurred.";
 
   return (
-    <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-3 py-2.5 text-sm text-red-300">
+    <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2.5 text-sm text-destructive">
       {message}
     </div>
   );
@@ -85,13 +75,13 @@ function LoginForm() {
   );
 
   return (
-    <div className="rounded-2xl border border-white/8 bg-black/30 backdrop-blur-xl p-8 shadow-2xl">
+    <div className="rounded-xl bg-card ring-1 ring-border p-8 shadow-sm">
       {/* Header */}
       <div className="mb-6">
-        <h2 className="font-heading text-xl font-semibold text-white">
+        <h2 className="font-heading text-xl font-semibold text-foreground">
           Welcome back
         </h2>
-        <p className="mt-1 text-sm text-white/40">
+        <p className="mt-1 text-sm text-muted-foreground">
           Sign in to your account to continue.
         </p>
       </div>
@@ -102,14 +92,14 @@ function LoginForm() {
 
         {/* Server action error */}
         {state.error && (
-          <div className="rounded-lg bg-red-500/10 border border-red-500/20 px-3 py-2.5 text-sm text-red-300">
+          <div className="rounded-lg bg-destructive/10 border border-destructive/20 px-3 py-2.5 text-sm text-destructive">
             {state.error}
           </div>
         )}
 
         {/* Email */}
         <div className="flex flex-col gap-1.5">
-          <label htmlFor="email" className="text-xs font-medium uppercase tracking-wider text-white/50">
+          <label htmlFor="email" className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
             Email
           </label>
           <input
@@ -119,47 +109,45 @@ function LoginForm() {
             placeholder="you@company.com"
             autoComplete="email"
             required
-            className="w-full h-11 rounded-lg border border-white/10 bg-white/5 px-4 text-sm text-white placeholder:text-white/30 focus:border-[#D4A843]/50 focus:outline-none focus:ring-1 focus:ring-[#D4A843]/30 transition-colors backdrop-blur-sm"
+            className="w-full h-11 rounded-lg border border-border bg-background px-4 text-sm text-foreground placeholder:text-muted-foreground/60 focus:border-primary/50 focus:outline-none focus:ring-1 focus:ring-primary/30 transition-colors"
           />
           {state.fieldErrors?.email && (
-            <p className="text-xs text-red-400">{state.fieldErrors.email[0]}</p>
+            <p className="text-xs text-destructive">{state.fieldErrors.email[0]}</p>
           )}
         </div>
 
         {/* Password */}
         <div className="flex flex-col gap-1.5">
           <div className="flex items-center justify-between">
-            <label htmlFor="password" className="text-xs font-medium uppercase tracking-wider text-white/50">
+            <label htmlFor="password" className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               Password
             </label>
             <Link
               href="/reset-password"
-              className="text-xs text-[#D4A843]/60 hover:text-[#D4A843] transition-colors"
+              className="text-xs text-primary/70 hover:text-primary transition-colors"
             >
               Forgot password?
             </Link>
           </div>
           <PasswordInput />
           {state.fieldErrors?.password && (
-            <p className="text-xs text-red-400">
+            <p className="text-xs text-destructive">
               {state.fieldErrors.password[0]}
             </p>
           )}
         </div>
 
-        {/* Gold divider */}
-        <div className="h-px w-full" style={{
-          background: "linear-gradient(90deg, transparent 0%, rgba(212,168,67,0.2) 50%, transparent 100%)",
-        }} />
+        {/* Divider */}
+        <div className="h-px w-full bg-border" />
 
         <SubmitButton />
       </form>
 
-      <p className="mt-5 text-center text-sm text-white/35">
+      <p className="mt-5 text-center text-sm text-muted-foreground">
         Don&apos;t have an account?{" "}
         <Link
           href="/signup"
-          className="font-medium text-[#D4A843]/70 hover:text-[#D4A843] transition-colors"
+          className="font-medium text-primary hover:text-primary/80 transition-colors"
         >
           Create one
         </Link>

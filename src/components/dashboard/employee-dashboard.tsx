@@ -157,9 +157,10 @@ export function EmployeeDashboard({ profile, todayStatus }: EmployeeDashboardPro
             <CardTitle>Recent Attendance</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex h-48 items-center justify-center rounded-lg border border-dashed border-border">
-              <p className="text-sm text-muted-foreground">
-                Your attendance history will appear here
+            <div className="flex flex-col items-center justify-center gap-3 py-12">
+              <CalendarDays className="size-8 text-muted-foreground/40" />
+              <p className="max-w-[32ch] text-center text-sm text-muted-foreground">
+                Your attendance history will build up as you clock in each day. Recent records will show here.
               </p>
             </div>
           </CardContent>

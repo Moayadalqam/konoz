@@ -44,28 +44,47 @@ export function HrDashboard({ profile, attendanceStats, trendData, activityFeed 
         </p>
       </div>
 
-      {/* Stats grid */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      {/* Hero stats — actionable, time-sensitive */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-6 dark:border-emerald-800/40 dark:bg-emerald-950/20">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
+              Present Today
+            </p>
+            <Clock className="size-5 text-emerald-500/60 dark:text-emerald-400/50" />
+          </div>
+          <p className="mt-3 font-heading text-4xl font-bold tracking-tight text-emerald-900 dark:text-emerald-100">
+            {attendanceStats.presentToday}
+          </p>
+          <p className="mt-1 text-sm text-emerald-600/80 dark:text-emerald-400/70">
+            Clocked in today
+          </p>
+        </div>
+
+        <div className="rounded-xl border border-red-200 bg-red-50/60 p-6 dark:border-red-800/40 dark:bg-red-950/20">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-red-700 dark:text-red-400">
+              Absent Today
+            </p>
+            <UserX className="size-5 text-red-500/60 dark:text-red-400/50" />
+          </div>
+          <p className="mt-3 font-heading text-4xl font-bold tracking-tight text-red-900 dark:text-red-100">
+            {attendanceStats.absentToday}
+          </p>
+          <p className="mt-1 text-sm text-red-600/80 dark:text-red-400/70">
+            Not clocked in
+          </p>
+        </div>
+      </div>
+
+      {/* Secondary stats */}
+      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <StatCard
           icon={Users}
           label="Total Employees"
           value={String(attendanceStats.totalEmployees)}
           sublabel="Active employees"
           accentClass="text-primary bg-primary/10"
-        />
-        <StatCard
-          icon={Clock}
-          label="Present Today"
-          value={String(attendanceStats.presentToday)}
-          sublabel="Clocked in"
-          accentClass="text-success bg-success/10"
-        />
-        <StatCard
-          icon={UserX}
-          label="Absent Today"
-          value={String(attendanceStats.absentToday)}
-          sublabel="Not clocked in"
-          accentClass="text-destructive bg-destructive/10"
         />
         <StatCard
           icon={AlertTriangle}
@@ -86,9 +105,10 @@ export function HrDashboard({ profile, attendanceStats, trendData, activityFeed 
             {trendData && trendData.length > 0 ? (
               <AttendanceTrendChart data={trendData} />
             ) : (
-              <div className="flex h-48 items-center justify-center rounded-lg border border-dashed border-border">
-                <p className="text-sm text-muted-foreground">
-                  No trend data available yet
+              <div className="flex flex-col items-center justify-center gap-3 py-12">
+                <BarChart3 className="size-8 text-muted-foreground/40" />
+                <p className="max-w-[28ch] text-center text-sm text-muted-foreground">
+                  Attendance trends will appear once employees start clocking in.
                 </p>
               </div>
             )}
@@ -132,9 +152,10 @@ export function HrDashboard({ profile, attendanceStats, trendData, activityFeed 
                 ))}
               </div>
             ) : (
-              <div className="flex h-48 items-center justify-center rounded-lg border border-dashed border-border">
-                <p className="text-sm text-muted-foreground">
-                  No recent activity
+              <div className="flex flex-col items-center justify-center gap-3 py-12">
+                <ClipboardCheck className="size-8 text-muted-foreground/40" />
+                <p className="max-w-[32ch] text-center text-sm text-muted-foreground">
+                  No recent HR actions. Corrections, approvals, and clock events will appear here.
                 </p>
               </div>
             )}

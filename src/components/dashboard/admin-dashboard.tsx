@@ -56,25 +56,46 @@ export function AdminDashboard({ profile, pendingCount, attendanceStats }: Admin
         </Link>
       )}
 
-      {/* Stats grid */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      {/* Hero stats — actionable, time-sensitive */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-6 dark:border-emerald-800/40 dark:bg-emerald-950/20">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
+              Present Today
+            </p>
+            <Clock className="size-5 text-emerald-500/60 dark:text-emerald-400/50" />
+          </div>
+          <p className="mt-3 font-heading text-4xl font-bold tracking-tight text-emerald-900 dark:text-emerald-100">
+            {attendanceStats.presentToday}
+          </p>
+          <p className="mt-1 text-sm text-emerald-600/80 dark:text-emerald-400/70">
+            Clocked in today
+          </p>
+        </div>
+
+        <div className="rounded-xl border border-red-200 bg-red-50/60 p-6 dark:border-red-800/40 dark:bg-red-950/20">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-red-700 dark:text-red-400">
+              Absent Today
+            </p>
+            <BarChart3 className="size-5 text-red-500/60 dark:text-red-400/50" />
+          </div>
+          <p className="mt-3 font-heading text-4xl font-bold tracking-tight text-red-900 dark:text-red-100">
+            {attendanceStats.absentToday}
+          </p>
+          <p className="mt-1 text-sm text-red-600/80 dark:text-red-400/70">
+            Not clocked in
+          </p>
+        </div>
+      </div>
+
+      {/* Secondary stats */}
+      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard
           icon={Users}
           label="Total Employees"
           value={String(attendanceStats.totalEmployees)}
           sublabel="Active employees"
-        />
-        <StatCard
-          icon={Clock}
-          label="Present Today"
-          value={String(attendanceStats.presentToday)}
-          sublabel="Clocked in"
-        />
-        <StatCard
-          icon={BarChart3}
-          label="Absent Today"
-          value={String(attendanceStats.absentToday)}
-          sublabel="Not clocked in"
         />
         <StatCard
           icon={AlertTriangle}

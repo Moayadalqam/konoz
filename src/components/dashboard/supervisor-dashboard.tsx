@@ -83,9 +83,10 @@ export function SupervisorDashboard({ profile, siteStats }: SupervisorDashboardP
             <CardTitle>Today&apos;s Site Activity</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex h-48 items-center justify-center rounded-lg border border-dashed border-border">
-              <p className="text-sm text-muted-foreground">
-                Site activity will appear here once workers check in
+            <div className="flex flex-col items-center justify-center gap-3 py-12">
+              <UserCheck className="size-8 text-muted-foreground/40" />
+              <p className="max-w-[32ch] text-center text-sm text-muted-foreground">
+                Today&apos;s check-ins, check-outs, and attendance events for your site will appear here.
               </p>
             </div>
           </CardContent>
