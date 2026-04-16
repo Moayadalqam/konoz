@@ -5,7 +5,8 @@
 See: .planning/PROJECT.md (updated 2026-03-31)
 
 **Core value:** Reliable attendance tracking that works even when the internet doesn't.
-**Current focus:** Phase 7 — Notifications & Polish
+**Current focus:** Finish Line — Design Polish
+**finish_line:** needs_polish
 
 ## Milestone: v1.0 — Demo-Ready Attendance System
 
@@ -43,5 +44,9 @@ See: .planning/PROJECT.md (updated 2026-03-31)
 | 2026-04-01 | phase-7-plan | Phase 7 planned — 6-wave plan for notifications (bell, realtime, 4 trigger types), loading/error states, animations, performance, demo polish |
 | 2026-04-01 | phase-7 | Phase 7 executed — notifications table + RLS, notification CRUD actions, creation helpers (geofence/late/daily summary), notification bell with Supabase Realtime, notification dropdown + full page, triggers wired into clockInAction + sync-provider + dashboard, 9 loading.tsx skeletons, 2 error boundaries, 404 page, PageTransition animations, prefers-reduced-motion CSS, all nav updated |
 
+| 2026-04-06 | fixes | Sidebar restructure (4 groups), RLS recursion fix, Base UI warnings, employee record link |
+| 2026-04-06 | audit | Milestone audit PASSED — 51/51 requirements, 135/136 UAT |
+| 2026-04-06 | archive | Milestone v1.0 archived and tagged |
+
 ---
-*Last updated: 2026-04-01*
+*Last updated: 2026-04-06*

@@ -11,6 +11,8 @@ import {
   StickyNote,
   AlertTriangle,
   CalendarDays,
+  Camera,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import type { SiteEmployeeAttendance } from "@/lib/validations/attendance";
@@ -88,6 +90,7 @@ export function SupervisorAttendance({
   locationName,
 }: SupervisorAttendanceProps) {
   const [isClockInOpen, setIsClockInOpen] = useState(false);
+  const [enlargedPhoto, setEnlargedPhoto] = useState<{ url: string; name: string } | null>(null);
   const [noteTarget, setNoteTarget] = useState<{
     attendanceId: string;
     employeeName: string;
@@ -263,9 +266,11 @@ export function SupervisorAttendance({
           <Table>
             <TableHeader>
               <TableRow className="bg-muted/30 hover:bg-muted/30">
-                <TableHead className="w-[40%] pl-4">Employee</TableHead>
+                <TableHead className="w-[35%] pl-4">Employee</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Time</TableHead>
+                <TableHead className="hidden md:table-cell">Photo</TableHead>
+                <TableHead className="hidden md:table-cell">Location</TableHead>
                 <TableHead className="hidden md:table-cell">Method</TableHead>
                 <TableHead className="w-12 pr-4 text-right">
                   <span className="sr-only">Actions</span>
@@ -383,6 +388,44 @@ export function SupervisorAttendance({
                         </div>
                       )}
                       {emp.status === "not_yet" && (
+                        <span className="text-xs text-muted-foreground">--</span>
+                      )}
+                    </TableCell>
+
+                    {/* Photo */}
+                    <TableCell className="hidden md:table-cell">
+                      {emp.clock_in_photo_url ? (
+                        <button
+                          onClick={() => setEnlargedPhoto({ url: emp.clock_in_photo_url!, name: emp.full_name })}
+                          className="group relative size-10 overflow-hidden rounded-lg border border-border transition-all hover:ring-2 hover:ring-primary/40"
+                        >
+                          <img
+                            src={emp.clock_in_photo_url}
+                            alt={`${emp.full_name} check-in`}
+                            className="size-full object-cover"
+                          />
+                          <span className="absolute inset-0 flex items-center justify-center bg-black/0 transition-colors group-hover:bg-black/20">
+                            <Camera className="size-3.5 text-white opacity-0 transition-opacity group-hover:opacity-100" />
+                          </span>
+                        </button>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">--</span>
+                      )}
+                    </TableCell>
+
+                    {/* Location (GPS) */}
+                    <TableCell className="hidden md:table-cell">
+                      {emp.clock_in_lat && emp.clock_in_lng ? (
+                        <a
+                          href={`https://www.google.com/maps?q=${emp.clock_in_lat},${emp.clock_in_lng}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                        >
+                          <MapPin className="size-3" />
+                          View Map
+                        </a>
+                      ) : (
                         <span className="text-xs text-muted-foreground">--</span>
                       )}
                     </TableCell>
@@ -544,6 +587,28 @@ export function SupervisorAttendance({
                         {emp.shift_name}
                       </p>
                     )}
+                    {/* Mobile: photo + location row */}
+                    <div className="mt-2 flex items-center gap-3">
+                      {emp.clock_in_photo_url && (
+                        <button
+                          onClick={() => setEnlargedPhoto({ url: emp.clock_in_photo_url!, name: emp.full_name })}
+                          className="size-8 overflow-hidden rounded-md border border-border"
+                        >
+                          <img src={emp.clock_in_photo_url} alt="" className="size-full object-cover" />
+                        </button>
+                      )}
+                      {emp.clock_in_lat && emp.clock_in_lng && (
+                        <a
+                          href={`https://www.google.com/maps?q=${emp.clock_in_lat},${emp.clock_in_lng}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-xs text-primary"
+                        >
+                          <MapPin className="size-3" />
+                          View Location
+                        </a>
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -607,6 +672,37 @@ export function SupervisorAttendance({
             if (!open) setNoteTarget(null);
           }}
         />
+      )}
+
+      {/* Enlarged photo overlay */}
+      {enlargedPhoto && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 animate-in fade-in duration-200"
+          onClick={() => setEnlargedPhoto(null)}
+        >
+          <div
+            className="relative max-h-[80vh] max-w-lg overflow-hidden rounded-2xl bg-card shadow-2xl animate-in zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-border px-4 py-3">
+              <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                <Camera className="size-4 text-primary" />
+                {enlargedPhoto.name} — Check-in Photo
+              </div>
+              <button
+                onClick={() => setEnlargedPhoto(null)}
+                className="flex size-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+              >
+                <X className="size-4" />
+              </button>
+            </div>
+            <img
+              src={enlargedPhoto.url}
+              alt={`${enlargedPhoto.name} check-in photo`}
+              className="w-full object-contain"
+            />
+          </div>
+        </div>
       )}
     </div>
   );

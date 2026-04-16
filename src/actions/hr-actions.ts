@@ -266,7 +266,10 @@ export async function getPendingOvertimeAction(): Promise<
     .eq("overtime_status", "pending")
     .order("clock_in", { ascending: false });
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    console.error("[hr-actions] getPendingOvertime error:", error.message);
+    return [];
+  }
   if (!data) return [];
 
   return data.map((row) => {
@@ -559,7 +562,10 @@ export async function getAuditLogAction(
 
   const { data, error } = await query;
 
-  if (error) throw new Error(error.message);
+  if (error) {
+    console.error("[hr-actions] getAuditLog error:", error.message);
+    return [];
+  }
   if (!data) return [];
 
   return data.map((row) => {

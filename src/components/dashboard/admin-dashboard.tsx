@@ -13,7 +13,6 @@ import {
 import type { Profile } from "@/lib/auth/types";
 import type { AttendanceStats } from "@/actions/attendance-stats";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { PageTransition } from "@/components/transitions/page-transition";
 
 interface AdminDashboardProps {
@@ -57,25 +56,46 @@ export function AdminDashboard({ profile, pendingCount, attendanceStats }: Admin
         </Link>
       )}
 
-      {/* Stats grid */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-5">
+      {/* Hero stats — actionable, time-sensitive */}
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <div className="rounded-xl border border-emerald-200 bg-emerald-50/60 p-6 dark:border-emerald-800/40 dark:bg-emerald-950/20">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
+              Present Today
+            </p>
+            <Clock className="size-5 text-emerald-500/60 dark:text-emerald-400/50" />
+          </div>
+          <p className="mt-3 font-heading text-4xl font-bold tracking-tight text-emerald-900 dark:text-emerald-100">
+            {attendanceStats.presentToday}
+          </p>
+          <p className="mt-1 text-sm text-emerald-600/80 dark:text-emerald-400/70">
+            Clocked in today
+          </p>
+        </div>
+
+        <div className="rounded-xl border border-red-200 bg-red-50/60 p-6 dark:border-red-800/40 dark:bg-red-950/20">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium text-red-700 dark:text-red-400">
+              Absent Today
+            </p>
+            <BarChart3 className="size-5 text-red-500/60 dark:text-red-400/50" />
+          </div>
+          <p className="mt-3 font-heading text-4xl font-bold tracking-tight text-red-900 dark:text-red-100">
+            {attendanceStats.absentToday}
+          </p>
+          <p className="mt-1 text-sm text-red-600/80 dark:text-red-400/70">
+            Not clocked in
+          </p>
+        </div>
+      </div>
+
+      {/* Secondary stats */}
+      <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard
           icon={Users}
           label="Total Employees"
           value={String(attendanceStats.totalEmployees)}
           sublabel="Active employees"
-        />
-        <StatCard
-          icon={Clock}
-          label="Present Today"
-          value={String(attendanceStats.presentToday)}
-          sublabel="Clocked in"
-        />
-        <StatCard
-          icon={BarChart3}
-          label="Absent Today"
-          value={String(attendanceStats.absentToday)}
-          sublabel="Not clocked in"
         />
         <StatCard
           icon={AlertTriangle}
@@ -97,18 +117,20 @@ export function AdminDashboard({ profile, pendingCount, attendanceStats }: Admin
           Quick Actions
         </h2>
         <div className="flex flex-wrap gap-3">
-          <Button variant="outline" size="lg" render={<Link href="/admin/users" />}>
+          <Link
+            href="/dashboard/locations"
+            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-border bg-background px-2.5 text-sm font-medium transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <BarChart3 className="size-4" />
+            View Locations
+          </Link>
+          <Link
+            href="/admin/users"
+            className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-border bg-background px-2.5 text-sm font-medium transition-colors hover:bg-muted hover:text-foreground"
+          >
             <Shield className="size-4" />
             Manage Users
-          </Button>
-          <Button variant="outline" size="lg" render={<Link href="/dashboard/reports" />}>
-            <BarChart3 className="size-4" />
-            View Reports
-          </Button>
-          <Button variant="outline" size="lg" render={<Link href="/dashboard/employees" />}>
-            <Users className="size-4" />
-            Employees
-          </Button>
+          </Link>
         </div>
       </div>
     </PageTransition>

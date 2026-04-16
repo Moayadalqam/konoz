@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { requireRole } from "@/lib/auth/dal";
+import { requireAuth, requireRole } from "@/lib/auth/dal";
 import { revalidatePath } from "next/cache";
 import {
   shiftSchema,
@@ -80,6 +80,7 @@ export async function deleteShiftAction(id: string) {
 }
 
 export async function getShiftsAction(): Promise<ShiftWithAssignmentCount[]> {
+  await requireAuth();
   const supabase = await createClient();
 
   const { data: shifts, error } = await supabase
@@ -150,6 +151,7 @@ export async function removeShiftAssignmentAction(id: string) {
 export async function getShiftAssignmentsAction(
   shiftId?: string
 ): Promise<ShiftAssignmentWithDetails[]> {
+  await requireAuth();
   const supabase = await createClient();
 
   let query = supabase

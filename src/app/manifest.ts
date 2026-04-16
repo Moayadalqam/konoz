@@ -8,8 +8,8 @@ export default function manifest(): MetadataRoute.Manifest {
       "Reliable attendance tracking for Kunoz construction and manufacturing.",
     start_url: "/dashboard/attendance",
     display: "standalone",
-    background_color: "#0f172a",
-    theme_color: "#0D7377",
+    background_color: "#0d0508",
+    theme_color: "#B8163A",
     orientation: "portrait",
     icons: [
       { src: "/icon-192x192.png", sizes: "192x192", type: "image/png" },

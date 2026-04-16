@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/supabase/server";
-import { requireRole } from "@/lib/auth/dal";
+import { requireAuth, requireRole } from "@/lib/auth/dal";
 import { revalidatePath } from "next/cache";
 import { locationSchema, type LocationFormData } from "@/lib/validations/location";
 
@@ -77,6 +77,7 @@ export async function deleteLocationAction(id: string) {
 }
 
 export async function getLocationsAction() {
+  await requireAuth();
   const supabase = await createClient();
 
   const { data, error } = await supabase

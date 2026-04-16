@@ -5,7 +5,7 @@ import { Clock, CalendarDays, Timer, CheckCircle2, ArrowRight } from "lucide-rea
 import type { Profile } from "@/lib/auth/types";
 import type { TodayStatusResult } from "@/lib/validations/attendance";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { buttonVariants } from "@/components/ui/button";
 import { PageTransition } from "@/components/transitions/page-transition";
 
 interface EmployeeDashboardProps {
@@ -49,14 +49,13 @@ export function EmployeeDashboard({ profile, todayStatus }: EmployeeDashboardPro
                   Not clocked in yet
                 </p>
               </div>
-              <Button
-                size="lg"
-                className="h-12 px-10 text-base font-semibold bg-emerald-600 hover:bg-emerald-700 text-white"
-                render={<Link href="/dashboard/attendance" />}
+              <Link
+                href="/dashboard/attendance"
+                className={buttonVariants({ size: "lg", className: "h-12 px-10 text-base font-semibold bg-emerald-600 hover:bg-emerald-700 text-white" })}
               >
                 <Clock className="size-5" />
                 Clock In
-              </Button>
+              </Link>
             </>
           )}
           {todayStatus.status === "clocked_in" && todayStatus.record && (
@@ -76,14 +75,13 @@ export function EmployeeDashboard({ profile, todayStatus }: EmployeeDashboardPro
                   Currently working
                 </p>
               </div>
-              <Button
-                size="lg"
-                className="h-12 px-10 text-base font-semibold bg-amber-500 hover:bg-amber-600 text-white"
-                render={<Link href="/dashboard/attendance" />}
+              <Link
+                href="/dashboard/attendance"
+                className={buttonVariants({ size: "lg", className: "h-12 px-10 text-base font-semibold bg-amber-500 hover:bg-amber-600 text-white" })}
               >
                 <ArrowRight className="size-5" />
                 Go to Attendance
-              </Button>
+              </Link>
             </>
           )}
           {todayStatus.status === "clocked_out" && todayStatus.record && (
@@ -159,9 +157,10 @@ export function EmployeeDashboard({ profile, todayStatus }: EmployeeDashboardPro
             <CardTitle>Recent Attendance</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex h-48 items-center justify-center rounded-lg border border-dashed border-border">
-              <p className="text-sm text-muted-foreground">
-                Your attendance history will appear here
+            <div className="flex flex-col items-center justify-center gap-3 py-12">
+              <CalendarDays className="size-8 text-muted-foreground/40" />
+              <p className="max-w-[32ch] text-center text-sm text-muted-foreground">
+                Your attendance history will build up as you clock in each day. Recent records will show here.
               </p>
             </div>
           </CardContent>

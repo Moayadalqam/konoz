@@ -44,9 +44,10 @@ export function useSyncContext() {
 const SYNC_INTERVAL = 30_000;
 
 export function SyncProvider({ children }: { children: ReactNode }) {
-  const [isOnline, setIsOnline] = useState(
-    typeof navigator !== "undefined" ? navigator.onLine : true
-  );
+  // Always initialize to true to avoid hydration mismatch.
+  // Node.js v21+ exposes `navigator` but `navigator.onLine` is undefined,
+  // causing server/client divergence. The real value is set in useEffect.
+  const [isOnline, setIsOnline] = useState(true);
   const [pendingCount, setPendingCount] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncResult, setLastSyncResult] = useState<SyncResult | null>(
@@ -101,6 +102,9 @@ export function SyncProvider({ children }: { children: ReactNode }) {
     window.addEventListener("offline", goOffline);
     document.addEventListener("visibilitychange", onVisibilityChange);
     navigator.serviceWorker?.addEventListener("message", onSwMessage);
+
+    // Set the real online status now that we're on the client
+    setIsOnline(navigator.onLine);
 
     refreshCounts();
     if (navigator.onLine) triggerSync();

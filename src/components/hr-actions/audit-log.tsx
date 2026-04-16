@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Fragment } from "react";
 import {
   Table,
   TableBody,
@@ -229,9 +229,8 @@ export function AuditLog() {
               </TableHeader>
               <TableBody>
                 {logs.map((log, idx) => (
-                  <>
+                  <Fragment key={log.id}>
                     <TableRow
-                      key={log.id}
                       className={idx % 2 === 1 ? "bg-muted/20" : ""}
                     >
                       <TableCell className="text-muted-foreground text-xs">
@@ -280,7 +279,7 @@ export function AuditLog() {
                         </TableCell>
                       </TableRow>
                     )}
-                  </>
+                  </Fragment>
                 ))}
               </TableBody>
             </Table>

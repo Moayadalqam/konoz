@@ -3,6 +3,7 @@ import { Sidebar } from "@/components/layout/sidebar";
 import { Topbar } from "@/components/layout/topbar";
 import { MobileNav } from "@/components/layout/mobile-nav";
 import { DashboardPwaWrapper } from "@/components/pwa/dashboard-pwa-wrapper";
+import { WelcomeOverlay } from "@/components/dashboard/welcome-overlay";
 
 export default async function DashboardLayout({
   children,
@@ -13,6 +14,7 @@ export default async function DashboardLayout({
 
   return (
     <DashboardPwaWrapper>
+      <WelcomeOverlay name={profile.full_name} role={profile.role} />
       <div className="flex min-h-dvh bg-background">
         {/* Sidebar — desktop + tablet only */}
         <aside className="hidden md:block w-60 shrink-0">

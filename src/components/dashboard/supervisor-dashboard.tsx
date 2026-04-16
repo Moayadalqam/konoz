@@ -60,14 +60,20 @@ export function SupervisorDashboard({ profile, siteStats }: SupervisorDashboardP
 
       {/* Quick actions */}
       <div className="mt-8 flex flex-wrap gap-3">
-        <Button variant="outline" size="lg" render={<Link href="/dashboard/bulk-checkin" />}>
+        <Link
+          href="/dashboard/bulk-checkin"
+          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-border bg-background px-2.5 text-sm font-medium transition-colors hover:bg-muted hover:text-foreground"
+        >
           <UserCheck className="size-4" />
           Bulk Check-in
-        </Button>
-        <Button variant="outline" size="lg" render={<Link href="/dashboard/site-attendance" />}>
+        </Link>
+        <Link
+          href="/dashboard/site-attendance"
+          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-border bg-background px-2.5 text-sm font-medium transition-colors hover:bg-muted hover:text-foreground"
+        >
           <Users className="size-4" />
           Site Attendance
-        </Button>
+        </Link>
       </div>
 
       {/* Activity placeholder */}
@@ -77,9 +83,10 @@ export function SupervisorDashboard({ profile, siteStats }: SupervisorDashboardP
             <CardTitle>Today&apos;s Site Activity</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex h-48 items-center justify-center rounded-lg border border-dashed border-border">
-              <p className="text-sm text-muted-foreground">
-                Site activity will appear here once workers check in
+            <div className="flex flex-col items-center justify-center gap-3 py-12">
+              <UserCheck className="size-8 text-muted-foreground/40" />
+              <p className="max-w-[32ch] text-center text-sm text-muted-foreground">
+                Today&apos;s check-ins, check-outs, and attendance events for your site will appear here.
               </p>
             </div>
           </CardContent>

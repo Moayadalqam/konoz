@@ -1,7 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-const publicRoutes = ["/login", "/signup", "/verify-email", "/reset-password"];
+const publicRoutes = ["/login", "/signup", "/verify-email", "/reset-password", "/install"];
 const authApiRoutes = ["/auth/callback", "/auth/update-password"];
 const staticAssets = ["/sw.js", "/manifest.webmanifest"];
 
